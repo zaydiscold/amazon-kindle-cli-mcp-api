@@ -1,0 +1,172 @@
+[
+  {
+    "name": "Account Home",
+    "url": "https://www.amazon.com/gp/css/homepage.html",
+    "status": 200,
+    "final": "https://www.amazon.com/gp/css/homepage.html",
+    "title": "(no title)",
+    "bytes": 314402,
+    "signed": true,
+    "redirected": false
+  },
+  {
+    "name": "Wishlist",
+    "url": "https://www.amazon.com/hz/wishlist/ls",
+    "status": 200,
+    "final": "https://www.amazon.com/hz/wishlist/ls",
+    "title": "(no title)",
+    "bytes": 647413,
+    "signed": true,
+    "redirected": false
+  },
+  {
+    "name": "Send to Kindle",
+    "url": "https://www.amazon.com/sendtokindle",
+    "status": 200,
+    "final": "https://www.amazon.com/sendtokindle",
+    "title": "(no title)",
+    "bytes": 339186,
+    "signed": true,
+    "redirected": false
+  },
+  {
+    "name": "STK Recent Docs",
+    "url": "https://www.amazon.com/sendtokindle/recent-docs",
+    "status": 200,
+    "final": "https://www.amazon.com/sendtokindle/recent-docs",
+    "title": "(no title)",
+    "bytes": 294982,
+    "signed": true,
+    "redirected": false
+  },
+  {
+    "name": "Manage Content - Books",
+    "url": "https://www.amazon.com/hz/mycd/digital-console/contentlist/booksAll/dateDsc/",
+    "status": 200,
+    "final": "https://www.amazon.com/hz/mycd/digital-console/contentlist/booksAll/dateDsc/",
+    "title": "Amazon.com: Manage Your Content and Devices",
+    "bytes": 398451,
+    "signed": true,
+    "redirected": false
+  },
+  {
+    "name": "Manage Content - Docs",
+    "url": "https://www.amazon.com/hz/mycd/digital-console/contentlist/pdocs/dateDsc/",
+    "status": 200,
+    "final": "https://www.amazon.com/hz/mycd/digital-console/contentlist/pdocs/dateDsc/",
+    "title": "Amazon.com: Manage Your Content and Devices",
+    "bytes": 390311,
+    "signed": true,
+    "redirected": false
+  },
+  {
+    "name": "MYX Content",
+    "url": "https://www.amazon.com/hz/mycd/myx#/home/content/booksAll",
+    "status": 200,
+    "final": "https://www.amazon.com/hz/mycd/myx#/home/content/booksAll",
+    "title": "Amazon.com: Manage Your Content and Devices",
+    "bytes": 400346,
+    "signed": true,
+    "redirected": false
+  },
+  {
+    "name": "MYX Settings",
+    "url": "https://www.amazon.com/hz/mycd/myx#/home/settings/pdocs",
+    "status": 200,
+    "final": "https://www.amazon.com/hz/mycd/myx#/home/settings/pdocs",
+    "title": "Amazon.com: Manage Your Content and Devices",
+    "bytes": 401592,
+    "signed": true,
+    "redirected": false
+  },
+  {
+    "name": "Digital Manage",
+    "url": "https://www.amazon.com/gp/digital/fiona/manage",
+    "status": 200,
+    "final": "https://www.amazon.com/gp/digital/fiona/manage",
+    "title": "Amazon.com: Manage Your Content and Devices",
+    "bytes": 400402,
+    "signed": true,
+    "redirected": false
+  },
+  {
+    "name": "Kindle Store",
+    "url": "https://www.amazon.com/kindle-dbs/kindle_landing",
+    "status": 404,
+    "final": "https://www.amazon.com/kindle-dbs/kindle_landing",
+    "title": "(no title)",
+    "bytes": 25,
+    "signed": false,
+    "redirected": false
+  },
+  {
+    "name": "KU Home",
+    "url": "https://www.amazon.com/kindle-dbs/ku/ku_landing",
+    "status": 404,
+    "final": "https://www.amazon.com/kindle-dbs/ku/ku_landing",
+    "title": "(no title)",
+    "bytes": 25,
+    "signed": false,
+    "redirected": false
+  },
+  {
+    "name": "Order History",
+    "url": "https://www.amazon.com/gp/your-account/order-history",
+    "status": 200,
+    "final": "https://www.amazon.com/gp/your-account/order-history",
+    "title": "Your Orders",
+    "bytes": 773392,
+    "signed": true,
+    "redirected": false
+  },
+  {
+    "name": "Buy Again",
+    "url": "https://www.amazon.com/gp/buyagain",
+    "status": 200,
+    "final": "https://www.amazon.com/gp/buyagain",
+    "title": "Buy Again",
+    "bytes": 617469,
+    "signed": true,
+    "redirected": false
+  },
+  {
+    "name": "Devices",
+    "url": "https://www.amazon.com/hz/mycd/myx#/home/devices",
+    "status": 200,
+    "final": "https://www.amazon.com/hz/mycd/myx#/home/devices",
+    "title": "Amazon.com: Manage Your Content and Devices",
+    "bytes": 400337,
+    "signed": true,
+    "redirected": false
+  },
+  {
+    "name": "Settings",
+    "url": "https://www.amazon.com/hz/mycd/myx#/home/settings",
+    "status": 200,
+    "final": "https://www.amazon.com/hz/mycd/myx#/home/settings",
+    "title": "Amazon.com: Manage Your Content and Devices",
+    "bytes": 400342,
+    "signed": true,
+    "redirected": false
+  },
+  {
+    "name": "Wishlist Create",
+    "url": "https://www.amazon.com/hz/wishlist/ls/ref=nav_wishlist_create",
+    "status": 200,
+    "final": "https://www.amazon.com/hz/wishlist/ls/ref=nav_wishlist_create",
+    "title": "(no title)",
+    "bytes": 648775,
+    "signed": true,
+    "redirected": false
+  },
+  {
+    "name": "STK Init (POST mock)",
+    "url": "https://www.amazon.com/sendtokindle/init",
+    "status": 405,
+    "final": "https://www.amazon.com/sendtokindle/init",
+    "title": "(no title)",
+    "bytes": 34,
+    "signed": false,
+    "redirected": false
+  }
+]

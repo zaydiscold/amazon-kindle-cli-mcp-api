@@ -1,0 +1,110 @@
+[
+  {
+    "name": "Send to Kindle home",
+    "url": "https://www.amazon.com/sendtokindle",
+    "status": 200,
+    "final": "https://www.amazon.com/sendtokindle",
+    "title": "(no title)",
+    "bytes": 308443,
+    "signed": true
+  },
+  {
+    "name": "STK recent docs",
+    "url": "https://www.amazon.com/sendtokindle/recent-docs",
+    "status": 200,
+    "final": "https://www.amazon.com/sendtokindle/recent-docs",
+    "title": "(no title)",
+    "bytes": 295008,
+    "signed": true
+  },
+  {
+    "name": "STK init (POST only, GET just checks live)",
+    "url": "https://www.amazon.com/sendtokindle/init",
+    "status": 0,
+    "final": "https://www.amazon.com/sendtokindle/init",
+    "title": "(no title)",
+    "bytes": 34,
+    "signed": false
+  },
+  {
+    "name": "Manage Content - Books",
+    "url": "https://www.amazon.com/hz/mycd/digital-console/contentlist/booksAll/dateDsc/",
+    "status": 200,
+    "final": "https://www.amazon.com/ap/signin?clientContext=135-7681475-8112016&openid.pape.max_auth_age=3600&openid.return_to=https%3A%2F%2Fwww.amazon.com%2Fhz%2Fmycd%2Fdigital-console%2Fcontentlist%2FbooksAll%2FdateDsc%2F&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=usflex&openid.mode=checkid_setup&marketPlaceId=USAmazon&language=en_US&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&requestTimeAtController=1785128956631&titleString=Amazon.com%3A+Manage+Your+Content+and+Devices&csrfToken=g1r7mjDhgUOBQRAcSohUB%2BLhuHvTG42%2FNqezs6taF15cAAAAAQAAAABqZuf8cmF3AAAAAFgvVn10EP4nuL9RKfa6ow%3D%3D&locale=en_US&isContentPage=true&isMshop=false",
+    "title": "(no title)",
+    "bytes": 134295,
+    "signed": false
+  },
+  {
+    "name": "Manage Content - Docs",
+    "url": "https://www.amazon.com/hz/mycd/digital-console/contentlist/pdocs/dateDsc/",
+    "status": 200,
+    "final": "https://www.amazon.com/ap/signin?clientContext=135-7681475-8112016&openid.pape.max_auth_age=3600&openid.return_to=https%3A%2F%2Fwww.amazon.com%2Fhz%2Fmycd%2Fdigital-console%2Fcontentlist%2Fpdocs%2FdateDsc%2F&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=usflex&openid.mode=checkid_setup&marketPlaceId=USAmazon&language=en_US&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&requestTimeAtController=1785128958172&titleString=Amazon.com%3A+Manage+Your+Content+and+Devices&csrfToken=g0LHtGa0Z3ju0R9oUXlaBBCsazybYQxL%2BtvaxOfv1hBvAAAAAQAAAABqZuf%2BcmF3AAAAAFgvVn10EP4nuL9RKfa6ow%3D%3D&locale=en_US&isContentPage=true&isMshop=false",
+    "title": "(no title)",
+    "bytes": 134320,
+    "signed": false
+  },
+  {
+    "name": "MYX home",
+    "url": "https://www.amazon.com/hz/mycd/myx#/home/content/booksAll",
+    "status": 200,
+    "final": "https://www.amazon.com/ap/signin?clientContext=135-7681475-8112016&openid.pape.max_auth_age=3600&openid.return_to=https%3A%2F%2Fwww.amazon.com%2Fhz%2Fmycd%2Fmyx&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=usflex&openid.mode=checkid_setup&marketPlaceId=USAmazon&language=en_US&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&language=en",
+    "title": "(no title)",
+    "bytes": 133866,
+    "signed": false
+  },
+  {
+    "name": "MYX settings/pdocs",
+    "url": "https://www.amazon.com/hz/mycd/myx#/home/settings/pdocs",
+    "status": 200,
+    "final": "https://www.amazon.com/ap/signin?clientContext=135-7681475-8112016&openid.pape.max_auth_age=3600&openid.return_to=https%3A%2F%2Fwww.amazon.com%2Fhz%2Fmycd%2Fmyx&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=usflex&openid.mode=checkid_setup&marketPlaceId=USAmazon&language=en_US&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&language=en",
+    "title": "(no title)",
+    "bytes": 133869,
+    "signed": false
+  },
+  {
+    "name": "Manage (legacy)",
+    "url": "https://www.amazon.com/gp/digital/fiona/manage",
+    "status": 200,
+    "final": "https://www.amazon.com/ap/signin?clientContext=135-7681475-8112016&openid.pape.max_auth_age=3600&openid.return_to=https%3A%2F%2Fwww.amazon.com%2Fgp%2Fdigital%2Ffiona%2Fmanage&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=usflex&openid.mode=checkid_setup&marketPlaceId=USAmazon&language=en_US&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&language=en",
+    "title": "(no title)",
+    "bytes": 133925,
+    "signed": false
+  },
+  {
+    "name": "Wishlist default",
+    "url": "https://www.amazon.com/hz/wishlist/ls",
+    "status": 200,
+    "final": "https://www.amazon.com/ap/signin?openid.pape.max_auth_age=900&openid.return_to=https%3A%2F%2Fwww.amazon.com%2Fhz%2Fwishlist%2Fls%2F26C3QAASCFU8S&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=amzn_wishlist_desktop_us&openid.mode=checkid_setup&language=en_US&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&pageId=Amazon&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0",
+    "title": "(no title)",
+    "bytes": 139556,
+    "signed": false
+  },
+  {
+    "name": "Account homepage",
+    "url": "https://www.amazon.com/gp/css/homepage.html",
+    "status": 200,
+    "final": "https://www.amazon.com/gp/css/homepage.html",
+    "title": "(no title)",
+    "bytes": 322573,
+    "signed": true
+  },
+  {
+    "name": "Kindle Books store",
+    "url": "https://www.amazon.com/kindle-dbs/kindle_landing",
+    "status": 0,
+    "final": "https://www.amazon.com/kindle-dbs/kindle_landing",
+    "title": "(no title)",
+    "bytes": 25,
+    "signed": false
+  },
+  {
+    "name": "Kindle Unlimited",
+    "url": "https://www.amazon.com/kindle-dbs/ku/ku_landing",
+    "status": 0,
+    "final": "https://www.amazon.com/kindle-dbs/ku/ku_landing",
+    "title": "(no title)",
+    "bytes": 25,
+    "signed": false
+  }
+]
