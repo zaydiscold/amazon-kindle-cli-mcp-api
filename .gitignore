@@ -1,0 +1,8 @@
+node_modules/
+dist/
+fixtures/
+.env
+*.log
+.DS_Store
+cli/dist/
+mcp/dist/

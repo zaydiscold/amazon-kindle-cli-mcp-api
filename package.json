@@ -1,0 +1,25 @@
+{
+  "name": "amazon-kindle-cli-workspace",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.12.1",
+  "scripts": {
+    "build": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli build && corepack pnpm --filter @zaydiscold/amazon-kindle-mcp build",
+    "test": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli test && corepack pnpm --filter @zaydiscold/amazon-kindle-mcp test",
+    "typecheck": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli typecheck && corepack pnpm --filter @zaydiscold/amazon-kindle-cli build && corepack pnpm --filter @zaydiscold/amazon-kindle-mcp typecheck",
+    "lint": "eslint cli/src cli/test mcp/src mcp/test",
+    "format": "prettier --write cli/src cli/test mcp/src mcp/test scripts",
+    "cli": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli cli",
+    "mcp": "scripts/amazon-kindle-mcp.sh",
+    "doctor": "node scripts/doctor.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.5",
+    "@typescript-eslint/eslint-plugin": "^8.64.0",
+    "@typescript-eslint/parser": "^8.64.0",
+    "eslint": "^10.7.0",
+    "prettier": "^3.9.5",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  }
+}

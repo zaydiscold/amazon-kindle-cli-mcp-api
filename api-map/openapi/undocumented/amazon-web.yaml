@@ -1,0 +1,38 @@
+openapi: 3.1.0
+info:
+  title: Amazon / Kindle undocumented web surface
+  version: 0.1.0
+  description: |
+    Hand-mapped routes for buyer Amazon + Kindle. No official buyer API.
+    Auth: AMAZON_COOKIE (browser session). Send-to-Kindle email path is separate (SMTP).
+paths:
+  /hz/wishlist/ls:
+    get:
+      operationId: get-wishlist-default
+      summary: Default wishlist HTML
+      tags: [wishlist]
+      x-mutatesAccount: false
+  /hz/wishlist/ls/{listId}:
+    get:
+      operationId: get-wishlist-by-id
+      summary: Named wishlist HTML
+      tags: [wishlist]
+      x-mutatesAccount: false
+  /hz/mycd/digital-console/contentlist/booksAll/dateDsc/:
+    get:
+      operationId: get-content-books
+      summary: Manage Your Content — books list
+      tags: [kindle-content]
+      x-mutatesAccount: false
+  /hz/mycd/digital-console/contentlist/pdocs/dateDsc/:
+    get:
+      operationId: get-content-pdocs
+      summary: Personal documents (Send-to-Kindle deliveries land here)
+      tags: [kindle-content]
+      x-mutatesAccount: false
+  /gp/css/homepage.html:
+    get:
+      operationId: get-account-homepage
+      summary: Account homepage — session canary
+      tags: [account]
+      x-mutatesAccount: false
