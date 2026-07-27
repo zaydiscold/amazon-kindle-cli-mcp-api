@@ -25,11 +25,12 @@ source ~/.amazon/auth.sh   # from brave_amazon_login.py dump
 amazon-kindle-cli doctor
 amazon-kindle-cli wishlist list
 
-# Send to Kindle (needs KINDLE_EMAIL + SMTP_*)
-export KINDLE_EMAIL=you_xxx@kindle.com
-export SMTP_HOST=... SMTP_USER=... SMTP_PASS=...
-amazon-kindle-cli kindle send ./book.epub           # dry-run plan
-amazon-kindle-cli kindle send ./book.epub --execute # live
+# Recommended: browser upload (default) — Amazon's actual UI, Brave CDP
+amazon-kindle-cli kindle send ./book.epub
+amazon-kindle-cli kindle send ./book.epub --execute
+
+# Direct HTTP path — mapped from the live flow; use intentionally
+amazon-kindle-cli kindle send ./book.epub --via web --execute
 ```
 
 ## Auth
@@ -57,10 +58,15 @@ login script: %LOCALAPPDATA%\amazon-kindle-debug-profile\brave_amazon_login.py
 ```text
 doctor
 auth status | import --file
-wishlist list [--url] [--fixture]
-kindle send <files...> [--kindle-email] [--execute]
+wishlist list
+wishlist add --asin | --title [--execute]
+kindle send <files...> [--via web|browser|email] [--execute]
+kindle recent
+parity [--user] [--shelf]
+sync goodreads-plan [--direction both]
+books resolve --title|--text
+add-plan --title|--text
 content devices
-sync goodreads-plan
 ```
 
 ## MCP tools
@@ -71,10 +77,13 @@ sync goodreads-plan
 | `amazon_kindle_auth_status` | read |
 | `amazon_kindle_auth_import` | write-safe |
 | `amazon_kindle_wishlist_list` | read |
+| `amazon_kindle_wishlist_add` | write-mutate (browser + execute gate) |
 | `amazon_kindle_send_plan` | read |
 | `amazon_kindle_send` | write-mutate (execute gate) |
-| `amazon_kindle_content_devices` | read |
+| `amazon_kindle_recent_docs` | read |
+| `amazon_kindle_parity` | read |
 | `amazon_kindle_goodreads_sync_plan` | read |
+| `amazon_kindle_books_resolve` / `amazon_kindle_add_plan` | read |
 
 Profiles: `AMAZON_KINDLE_MCP_PROFILE=full|core`
 

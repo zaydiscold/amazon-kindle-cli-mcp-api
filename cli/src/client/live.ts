@@ -1,5 +1,5 @@
 export function cookieHeader(): string | undefined {
-  return process.env.AMAZON_COOKIE || undefined;
+  return process.env.AMAZON_COOKIE || process.env.AMAZON_COOKIES || undefined;
 }
 
 export async function executeAmazonGet(

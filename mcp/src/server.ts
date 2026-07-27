@@ -20,13 +20,16 @@ function loadAuth(): void {
   } catch {
     /* optional */
   }
+  if (!process.env.AMAZON_COOKIE && process.env.AMAZON_COOKIES) {
+    process.env.AMAZON_COOKIE = process.env.AMAZON_COOKIES;
+  }
 }
 loadAuth();
 
 const profile = parseMcpProfile(process.env.AMAZON_KINDLE_MCP_PROFILE);
 const allowed = new Set(profile === "core" ? CORE_TOOL_NAMES : FULL_TOOL_NAMES);
 
-const server = new McpServer({ name: "amazon-kindle", version: "0.1.0" });
+const server = new McpServer({ name: "amazon-kindle", version: "0.2.0" });
 
 function ok(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data) }] };
@@ -56,33 +59,122 @@ function add(
 
 add("amazon_kindle_doctor", {}, async () => engine.doctor());
 add("amazon_kindle_auth_status", {}, async () => engine.authStatus());
-add("amazon_kindle_auth_import", { file: z.string() }, async (a) => engine.authImport({ file: String(a.file) }), false);
+add(
+  "amazon_kindle_auth_import",
+  { file: z.string() },
+  async (a) => engine.authImport({ file: String(a.file) }),
+  false,
+);
 add(
   "amazon_kindle_wishlist_list",
   { url: z.string().optional(), fixture: z.string().optional() },
-  async (a) => engine.wishlistList({ url: a.url as string | undefined, fixture: a.fixture as string | undefined }),
+  async (a) =>
+    engine.wishlistList({ url: a.url as string | undefined, fixture: a.fixture as string | undefined }),
+);
+add(
+  "amazon_kindle_wishlist_add",
+  { asin: z.string().optional(), title: z.string().optional(), author: z.string().optional(), listName: z.string().optional(), execute: z.boolean().default(false) },
+  async (a) => engine.wishlistAdd({ asin: a.asin as string | undefined, title: a.title as string | undefined, author: a.author as string | undefined, listName: a.listName as string | undefined, execute: Boolean(a.execute) }),
+  false,
 );
 add(
   "amazon_kindle_send_plan",
-  { files: z.array(z.string()), kindleEmail: z.string().optional() },
-  async (a) => engine.kindleSendPlan({ files: a.files as string[], kindleEmail: a.kindleEmail as string | undefined }),
+  {
+    files: z.array(z.string()),
+    via: z.enum(["web", "browser", "email"]).optional(),
+    kindleEmail: z.string().optional(),
+  },
+  async (a) =>
+    engine.kindleSendPlan({
+      files: a.files as string[],
+      via: a.via as "web" | "email" | undefined,
+      kindleEmail: a.kindleEmail as string | undefined,
+    }),
 );
 add(
   "amazon_kindle_send",
-  { files: z.array(z.string()), kindleEmail: z.string().optional(), execute: z.boolean().default(false) },
+  {
+    files: z.array(z.string()),
+    via: z.enum(["web", "browser", "email"]).optional(),
+    kindleEmail: z.string().optional(),
+    execute: z.boolean().default(false),
+    archive: z.boolean().optional(),
+  },
   async (a) =>
     engine.kindleSend({
       files: a.files as string[],
+      via: (a.via as "web" | "email") || "web",
       kindleEmail: a.kindleEmail as string | undefined,
       execute: Boolean(a.execute),
+      archive: a.archive as boolean | undefined,
     }),
   false,
 );
+add("amazon_kindle_recent_docs", {}, async () => engine.kindleRecent());
 add("amazon_kindle_content_devices", {}, async () => engine.contentDevices());
 add(
   "amazon_kindle_goodreads_sync_plan",
-  { url: z.string().optional(), fixture: z.string().optional() },
-  async (a) => engine.goodreadsSyncPlan({ wishlistUrl: a.url as string | undefined, fixture: a.fixture as string | undefined }),
+  {
+    url: z.string().optional(),
+    fixture: z.string().optional(),
+    userId: z.string().optional(),
+    direction: z.enum(["amazon-to-goodreads", "goodreads-to-amazon", "both"]).optional(),
+  },
+  async (a) =>
+    engine.goodreadsSyncPlan({
+      wishlistUrl: a.url as string | undefined,
+      fixture: a.fixture as string | undefined,
+      userId: a.userId as string | undefined,
+      direction: a.direction as "amazon-to-goodreads" | "goodreads-to-amazon" | "both" | undefined,
+    }),
+);
+add(
+  "amazon_kindle_parity",
+  {
+    userId: z.string().optional(),
+    shelf: z.string().optional(),
+    url: z.string().optional(),
+    fixture: z.string().optional(),
+  },
+  async (a) =>
+    engine.parityCheck({
+      userId: a.userId as string | undefined,
+      shelf: a.shelf as string | undefined,
+      wishlistUrl: a.url as string | undefined,
+      fixture: a.fixture as string | undefined,
+    }),
+);
+add(
+  "amazon_kindle_books_resolve",
+  {
+    title: z.string().optional(),
+    author: z.string().optional(),
+    asin: z.string().optional(),
+    text: z.string().optional(),
+  },
+  async (a) =>
+    engine.booksResolve({
+      title: a.title as string | undefined,
+      author: a.author as string | undefined,
+      asin: a.asin as string | undefined,
+      text: a.text as string | undefined,
+    }),
+);
+add(
+  "amazon_kindle_add_plan",
+  {
+    title: z.string().optional(),
+    author: z.string().optional(),
+    asin: z.string().optional(),
+    text: z.string().optional(),
+  },
+  async (a) =>
+    engine.addPlan({
+      title: a.title as string | undefined,
+      author: a.author as string | undefined,
+      asin: a.asin as string | undefined,
+      text: a.text as string | undefined,
+    }),
 );
 
 const transport = new StdioServerTransport();
