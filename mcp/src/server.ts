@@ -84,13 +84,19 @@ add(
 add(
   "amazon_kindle_wishlist_add",
   {
-    asin: z.string(),
+    asin: z.string().optional(),
+    title: z.string().optional(),
+    author: z.string().optional(),
+    listName: z.string().optional(),
     listId: z.string().optional(),
     execute: z.boolean().default(false),
   },
   async (a) =>
     engine.wishlistAdd({
-      asin: a.asin as string,
+      asin: a.asin as string | undefined,
+      title: a.title as string | undefined,
+      author: a.author as string | undefined,
+      listName: a.listName as string | undefined,
       listId: a.listId as string | undefined,
       execute: Boolean(a.execute),
     }),

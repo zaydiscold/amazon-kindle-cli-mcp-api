@@ -9,6 +9,7 @@
  * Browser path remains optional fallback only.
  */
 import { cookieHeader } from "./live.js";
+import { amazonNavigateHeaders, amazonXhrHeaders } from "./httpHeaders.js";
 
 const UA =
   "amazon-kindle-cli/0.3.0 (+wishlist-http; https://github.com/zaydiscold/amazon-kindle-cli-mcp-api)";
@@ -76,12 +77,7 @@ async function amazonGet(url: string): Promise<{ status: number; text: string; h
   const cookie = requireCookie();
   const res = await fetch(url, {
     method: "GET",
-    headers: {
-      cookie,
-      "user-agent": UA,
-      accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
-      "accept-language": "en-US,en;q=0.9",
-    },
+    headers: amazonNavigateHeaders(cookie, "https://www.amazon.com/"),
     redirect: "manual",
     signal: AbortSignal.timeout(45_000),
   });
@@ -179,15 +175,10 @@ async function postAdd(
   const res = await fetch("https://www.amazon.com/hz/wishlist/additemtolist?ie=UTF8", {
     method: "POST",
     headers: {
-      cookie,
-      "user-agent": UA,
-      "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
-      accept: "*/*",
-      "x-requested-with": "XMLHttpRequest",
-      "anti-csrftoken-a2z": csrf,
-      origin: "https://www.amazon.com",
-      referer,
-    },
+          ...amazonXhrHeaders(cookie, referer),
+          "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
+          "anti-csrftoken-a2z": csrf,
+        },
     body: body.toString(),
     redirect: "manual",
     signal: AbortSignal.timeout(45_000),

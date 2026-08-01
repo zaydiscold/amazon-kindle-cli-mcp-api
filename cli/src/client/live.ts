@@ -1,3 +1,5 @@
+import { amazonNavigateHeaders } from "./httpHeaders.js";
+
 export function cookieHeader(): string | undefined {
   return process.env.AMAZON_COOKIE || process.env.AMAZON_COOKIES || undefined;
 }
@@ -14,9 +16,9 @@ export async function executeAmazonGet(
   text: string;
   bodyPreview: string;
 }> {
-  const headers: Record<string, string> = {
-    "user-agent":
-      "amazon-kindle-cli/0.1.0 (+https://github.com/zaydiscold/amazon-kindle-cli-mcp-api)",
+  let headers: Record<string, string> = {
+    "user-agent": process.env.AMAZON_HTTP_USER_AGENT ||
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
     accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
     "accept-language": "en-US,en;q=0.9",
   };
@@ -25,7 +27,7 @@ export async function executeAmazonGet(
     if (!cookie) {
       throw new Error("AMAZON_COOKIE is required (source ~/.amazon/auth.sh or auth import)");
     }
-    headers.cookie = cookie;
+    headers = amazonNavigateHeaders(cookie);
   }
   const res = await fetch(url, {
     method: "GET",

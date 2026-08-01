@@ -7,7 +7,8 @@
  *
  * No browser scroll. Requires AMAZON_COOKIE.
  */
-import { cookieHeader, executeAmazonGet } from "./live.js";
+import { cookieHeader } from "./live.js";
+import { amazonNavigateHeaders } from "./httpHeaders.js";
 import { parseWishlistHtml, type WishlistItem, type WishlistPage } from "../parsers/wishlist.js";
 
 const UA = "amazon-kindle-cli/0.3.0 (+wishlist-list-http)";
@@ -61,14 +62,7 @@ async function getHtml(url: string): Promise<{ status: number; text: string }> {
   requireCookie();
   const res = await fetch(url, {
     method: "GET",
-    headers: {
-      cookie: requireCookie(),
-      "user-agent": UA,
-      accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
-      "accept-language": "en-US,en;q=0.9",
-      "x-requested-with": "XMLHttpRequest",
-      referer: "https://www.amazon.com/hz/wishlist/ls",
-    },
+    headers: amazonNavigateHeaders(requireCookie(), "https://www.amazon.com/hz/wishlist/ls"),
     redirect: "manual",
     signal: AbortSignal.timeout(45_000),
   });

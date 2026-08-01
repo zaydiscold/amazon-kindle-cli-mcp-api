@@ -4,6 +4,7 @@ import { executeKindleSend, planKindleSend, type KindleSendOptions } from "./cli
 import { executeWebUpload, planWebUpload, recentDocs } from "./client/kindleWebUpload.js";
 import { executeWishlistHttpAdd, planWishlistHttpAdd } from "./client/wishlistHttp.js";
 import { wishlistListHttp } from "./client/wishlistListHttp.js";
+import { resolveAmazonSearchHttp, resolveWishlistTargetHttp } from "./client/wishlistResolveHttp.js";
 import { emitLiveMutationWarning } from "./risk.js";
 import { bookKey, computeParity, type BookRef } from "./parity.js";
 import { fetchGoodreadsShelfRss, searchGoodreadsBookId } from "./client/goodreadsBridge.js";
@@ -208,25 +209,43 @@ export async function wishlistAdd(opts: {
   listId?: string;
   execute?: boolean;
 }): Promise<CommandEnvelope> {
-  if (!opts.asin) {
-    throw new Error("asin required for wishlist add (HTTP). Resolve title→ASIN first.");
+  let asin = opts.asin?.trim().toUpperCase() || undefined;
+  let resolvedFromSearch: unknown = undefined;
+  if (!asin) {
+    const query = [opts.title, opts.author].filter(Boolean).join(" ").trim();
+    if (!query) throw new Error("asin or title required for HTTP wishlist add");
+    const candidates = await resolveAmazonSearchHttp(query);
+    if (!candidates.length) throw new Error(`no Amazon product candidates found for ${JSON.stringify(query)}`);
+    // Retains legacy helper semantics (first Amazon search result), but returns the exact selection.
+    asin = candidates[0].asin;
+    resolvedFromSearch = { query, selected: candidates[0], candidates };
   }
+
+  let listId = opts.listId || process.env.AMAZON_WISHLIST_ID || undefined;
+  let resolvedList: unknown = undefined;
+  if (opts.listName && !opts.listId) {
+    const target = await resolveWishlistTargetHttp(opts.listName);
+    listId = target.id;
+    resolvedList = target;
+  }
+
   if (!opts.execute) {
-    const plan = await planWishlistHttpAdd({
-      asin: opts.asin,
-      listId: opts.listId,
-      execute: false,
-      dryRun: true,
+    const plan = await planWishlistHttpAdd({ asin, listId, execute: false, dryRun: true });
+    return envelope("wishlist-add", "write-mutate", {
+      submitted: false,
+      via: "http",
+      plan,
+      ...(resolvedFromSearch ? { resolvedFromSearch } : {}),
+      ...(resolvedList ? { resolvedList } : {}),
     });
-    return envelope("wishlist-add", "write-mutate", { submitted: false, via: "http", plan });
   }
   emitLiveMutationWarning("Amazon wishlist HTTP add (POST /hz/wishlist/additemtolist)");
-  const result = await executeWishlistHttpAdd({
-    asin: opts.asin,
-    listId: opts.listId || process.env.AMAZON_WISHLIST_ID || undefined,
-    execute: true,
+  const result = await executeWishlistHttpAdd({ asin, listId, execute: true });
+  return envelope("wishlist-add", "write-mutate", {
+    ...result,
+    ...(resolvedFromSearch ? { resolvedFromSearch } : {}),
+    ...(resolvedList ? { resolvedList } : {}),
   });
-  return envelope("wishlist-add", "write-mutate", result);
 }
 
 function wishlistToRefs(
@@ -414,9 +433,9 @@ export async function booksResolve(opts: {
         ? { tool: "goodreads_shelf_add", args: { bookId: goodreadsId, shelf: "to-read", execute: false } }
         : { tool: "goodreads_shelf_add", resolve: "search first", execute: false },
       amazonWishlist: {
-        path: amazonUrl,
-        note: "Open ASIN/search → Add to List (Want to Read / Shopping List)",
-      },
+              path: amazonUrl,
+              note: "HTTP: books resolve → wishlist add --asin <ASIN> --execute; title input uses HTTP /s resolution.",
+            },
       kindle: { note: "If you have an EPUB/PDF: kindle send --via web --execute" },
     },
   });
@@ -436,7 +455,7 @@ export async function addPlan(opts: {
     targets,
     executeGates: {
       goodreads: "goodreads-cli shelves add --book-id <id> --name to-read --execute",
-      amazon: "Browser wishlist add until POST add-to-list is mapped",
+      amazon: "amazon-kindle-cli wishlist add --asin <ASIN> --execute (or title/author → HTTP search resolution)",
       kindle: "amazon-kindle-cli kindle send <file> --via web --execute",
     },
   });

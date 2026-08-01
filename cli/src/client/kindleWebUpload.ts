@@ -13,6 +13,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 import { cookieHeader } from "./live.js";
+import { AMAZON_HTTP_UA, amazonNavigateHeaders, amazonXhrHeaders } from "./httpHeaders.js";
 
 const MIME: Record<string, string> = {
   ".epub": "application/epub+zip",
@@ -46,7 +47,7 @@ function nativePath(input: string): string {
 }
 
 function ua(): string {
-  return "amazon-kindle-cli/0.2.0 (+sendtokindle-web)";
+  return AMAZON_HTTP_UA;
 }
 
 async function amazonFetch(
@@ -55,11 +56,8 @@ async function amazonFetch(
 ): Promise<Response> {
   const cookie = cookieHeader();
   if (!cookie) throw new Error("AMAZON_COOKIE required for web upload");
-  const headers = new Headers(init.headers || {});
-  headers.set("cookie", cookie);
-  headers.set("user-agent", ua());
-  headers.set("origin", "https://www.amazon.com");
-  headers.set("referer", "https://www.amazon.com/sendtokindle");
+  const headers = new Headers(amazonXhrHeaders(cookie, "https://www.amazon.com/sendtokindle"));
+  for (const [key, value] of Object.entries(init.headers || {})) headers.set(key, value);
   if (init.csrf) headers.set("anti-csrftoken-a2z", init.csrf);
   return fetch(url, { ...init, headers, redirect: "manual", signal: AbortSignal.timeout(120_000) });
 }
@@ -67,12 +65,13 @@ async function amazonFetch(
 export async function extractSendToKindleCsrf(): Promise<string> {
   const res = await amazonFetch("https://www.amazon.com/sendtokindle");
   const html = await res.text();
-  // Live page embeds: anti-csrftoken-a2z&quot;:&quot;TOKEN
+  // Send-to-Kindle's own JS calls dndUtils.getCsrfToken(), which reads exactly
+  // `<input name="csrfToken" value="…">`. Prefer it over generic Amazon navbar tokens.
   const m =
+    html.match(/<input[^>]+name=["']csrfToken["'][^>]+value=["']([^"']+)["']/i) ||
+    html.match(/<input[^>]+value=["']([^"']+)["'][^>]+name=["']csrfToken["']/i) ||
     html.match(/anti-csrftoken-a2z&quot;:&quot;([^&]+)/i) ||
-    html.match(/anti-csrftoken-a2z["'\\s:]+["']([^"']{20,})/i) ||
-    html.match(/name="anti-csrftoken-a2z"\s+content="([^"]+)"/i) ||
-    html.match(/"csrfToken"\s*:\s*"([^"]+)"/i);
+    html.match(/anti-csrftoken-a2z["'\\s:]+["']([^"']{20,})/i);
   if (!m) {
     throw new Error("could not extract anti-csrftoken-a2z from /sendtokindle");
   }

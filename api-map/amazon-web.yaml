@@ -1,115 +1,71 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Amazon/Kindle buyer surface",
-    "version": "0.3.0",
-    "description": "Full amazon.com buyer surface for Kindle, content, and wishlist operations."
+    "title": "Amazon / Kindle HTTP Surface",
+    "version": "0.3.1",
+    "description": "Sanitized, HTTP-first map. CLI is the primary client; MCP is a thin engine projection. Browser/CDP may capture auth/contracts but is never a product transport."
   },
-  "servers": [
-    {
-      "url": "https://www.amazon.com"
-    }
-  ],
+  "servers": [{ "url": "https://www.amazon.com" }],
   "paths": {
+    "/s": {
+      "get": {
+        "summary": "Search Amazon catalog to resolve title/author to ASIN",
+        "description": "Query `k`; CLI parses product cards and returns selected candidate + alternatives.",
+        "x-mutatesAccount": false,
+        "x-verification": "HTTP parser fixture + authenticated live search",
+        "tags": ["catalog", "wishlist"]
+      }
+    },
+    "/dp/{asin}": {
+      "get": {
+        "summary": "Fetch product / Add-to-List CSRF source",
+        "description": "Extract anti-csrftoken-a2z from #addToWishListForm before list mutation.",
+        "x-mutatesAccount": false,
+        "tags": ["catalog", "wishlist"]
+      }
+    },
     "/hz/wishlist/ls": {
       "get": {
-        "summary": "Get default wishlist HTML",
+        "summary": "Wishlist index and named-list discovery",
+        "description": "Resolve listName to listId; default / list-id page starts full queue walk.",
         "x-mutatesAccount": false,
-        "tags": ["kindle", "wishlist"]
-      },
-      "post": {
-        "summary": "Add to wishlist (legacy form)",
-        "x-mutatesAccount": true,
-        "tags": ["kindle", "wishlist"]
+        "tags": ["wishlist"]
+      }
+    },
+    "/hz/wishlist/ls/{listId}": {
+      "get": {
+        "summary": "Wishlist first page",
+        "description": "Parse cards and showMoreUrl/paginationToken.",
+        "x-mutatesAccount": false,
+        "tags": ["wishlist"]
+      }
+    },
+    "/hz/wishlist/slv/items": {
+      "get": {
+        "summary": "Wishlist pagination",
+        "description": "filter + paginationToken from showMoreUrl; repeat until no next token.",
+        "x-mutatesAccount": false,
+        "x-liveVerified": "2026-08-01",
+        "tags": ["wishlist"]
       }
     },
     "/hz/wishlist/additemtolist": {
-          "post": {
-            "summary": "Add ASIN to wishlist (AJAX) — live-mapped 2026-08-01",
-            "description": "Form body: asin, vendorId=website.wishlist.detail.add, listType=wishlist, isAjax=1, optional listId. Header anti-csrftoken-a2z from GET /dp/{ASIN}. Query ie=UTF8.",
-            "x-mutatesAccount": true,
-            "x-liveVerified": "2026-08-01",
-            "tags": ["kindle", "wishlist"]
-          }
-        },
-        "/hz/wishlist/slv/items": {
-          "get": {
-            "summary": "Wishlist pagination (show more) — live-mapped 2026-08-01",
-            "description": "Query: filter=unpurchased&paginationToken=… from list page showMoreUrl. Returns HTML fragment or JSON with more items.",
-            "x-mutatesAccount": false,
-            "x-liveVerified": "2026-08-01",
-            "tags": ["kindle", "wishlist"]
-          }
-        },
-    "/sendtokindle": {
-      "get": {
-        "summary": "Send to Kindle home",
-        "x-mutatesAccount": false,
-        "tags": ["kindle"]
-      }
-    },
-    "/sendtokindle/init": {
       "post": {
-        "summary": "Init file upload session",
+        "summary": "Add ASIN to named/default wishlist",
+        "description": "Query ie=UTF8. Form: asin, vendorId=website.wishlist.detail.add, listType=wishlist, isAjax=1, optional listId. Header anti-csrftoken-a2z from product GET.",
         "x-mutatesAccount": true,
-        "tags": ["kindle"]
+        "x-liveVerified": "2026-08-01",
+        "tags": ["wishlist"]
       }
     },
-    "/sendtokindle/upload": {
-      "put": {
-        "summary": "Upload file bytes to presigned URL",
-        "x-mutatesAccount": true,
-        "tags": ["kindle"]
-      }
-    },
-    "/sendtokindle/send-v2": {
-      "post": {
-        "summary": "Complete send to kindle",
-        "x-mutatesAccount": true,
-        "tags": ["kindle"]
-      }
-    },
-    "/sendtokindle/recent-docs": {
-      "get": {
-        "summary": "List recent STK docs",
-        "x-mutatesAccount": false,
-        "tags": ["kindle"]
-      }
-    },
-    "/sendtokindle/dnd-metrics": {
-      "post": {
-        "summary": "STK telemetry",
-        "x-mutatesAccount": true,
-        "tags": ["kindle"]
-      }
-    },
-    "/hz/mycd/digital-console/contentlist/booksAll/dateDsc/": {
-      "get": {
-        "summary": "List Kindle books",
-        "x-mutatesAccount": false,
-        "tags": ["kindle", "content"]
-      }
-    },
-    "/hz/mycd/digital-console/contentlist/pdocs/dateDsc/": {
-      "get": {
-        "summary": "List personal docs",
-        "x-mutatesAccount": false,
-        "tags": ["kindle", "content"]
-      }
-    },
-    "/hz/mycd/myx": {
-      "get": {
-        "summary": "Manage Your Content root",
-        "x-mutatesAccount": false,
-        "tags": ["kindle", "content"]
-      }
-    },
-    "/gp/digital/fiona/manage": {
-      "get": {
-        "summary": "Legacy device management",
-        "x-mutatesAccount": false,
-        "tags": ["kindle"]
-      }
-    }
+    "/sendtokindle": { "get": { "summary": "Get Send-to-Kindle CSRF", "x-mutatesAccount": false, "tags": ["kindle"] } },
+    "/sendtokindle/init": { "post": { "summary": "Initialize file upload", "x-mutatesAccount": true, "tags": ["kindle"] } },
+    "/sendtokindle/upload": { "put": { "summary": "PUT bytes to presigned upload URL", "x-mutatesAccount": true, "tags": ["kindle"] } },
+    "/sendtokindle/send-v2": { "post": { "summary": "Finalize Send-to-Kindle delivery", "x-mutatesAccount": true, "tags": ["kindle"] } },
+    "/sendtokindle/recent-docs": { "get": { "summary": "Read Send-to-Kindle receipts", "x-mutatesAccount": false, "tags": ["kindle"] } },
+    "/hz/mycd/digital-console/contentlist/booksAll/dateDsc/": { "get": { "summary": "Read Kindle books", "x-mutatesAccount": false, "tags": ["content"] } },
+    "/hz/mycd/digital-console/contentlist/pdocs/dateDsc/": { "get": { "summary": "Read personal documents", "x-mutatesAccount": false, "tags": ["content"] } },
+    "/hz/mycd/myx": { "get": { "summary": "Manage Your Content root", "x-mutatesAccount": false, "tags": ["content"] } },
+    "/gp/digital/fiona/manage": { "get": { "summary": "Legacy device management", "x-mutatesAccount": false, "tags": ["content"] } }
   }
 }
