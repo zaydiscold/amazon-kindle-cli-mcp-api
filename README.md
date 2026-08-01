@@ -37,6 +37,11 @@ amazon-kindle-cli kindle send ./book.epub --execute
 amazon-kindle-cli kindle send ./book.epub --via web --execute
 ```
 
+## Wishlist HTTP (default)
+
+`wishlist add --asin … --execute` → `GET /dp/{ASIN}` (CSRF from `#addToWishListForm`) → `POST /hz/wishlist/additemtolist`.
+Browser CDP is `--via browser` fallback only.
+
 ## Auth
 
 | Surface | Env | Notes |

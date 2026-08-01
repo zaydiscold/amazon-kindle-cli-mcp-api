@@ -50,13 +50,28 @@ wishlist
   .action(async (opts) => printJson(await engine.wishlistList(opts), true));
 wishlist
   .command("add")
-  .description("Add a book to Amazon Shopping List through the Brave browser (dry-run default)")
+  .description("Add ASIN to Amazon list via HTTP (default) or browser CDP fallback (dry-run default)")
   .option("--asin <asin>")
   .option("--title <title>")
   .option("--author <author>")
-  .option("--list-name <name>", "Amazon list name", "Shopping List")
-  .option("--execute", "Actually click Add to List", false)
-  .action(async (opts) => printJson(await engine.wishlistAdd(opts), true));
+  .option("--list-id <id>", "Wishlist id (default AMAZON_WISHLIST_ID or account default)")
+  .option("--list-name <name>", "Amazon list name (browser path)", "Shopping List")
+  .option("--via <path>", "http | browser", "http")
+  .option("--execute", "Actually mutate the list", false)
+  .action(async (opts) =>
+    printJson(
+      await engine.wishlistAdd({
+        asin: opts.asin,
+        title: opts.title,
+        author: opts.author,
+        listId: opts.listId,
+        listName: opts.listName,
+        via: opts.via === "browser" ? "browser" : "http",
+        execute: Boolean(opts.execute),
+      }),
+      true,
+    ),
+  );
 
 const kindle = program.command("kindle").description("Kindle delivery + library");
 kindle
