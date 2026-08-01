@@ -11,9 +11,6 @@
 import { cookieHeader } from "./live.js";
 import { amazonNavigateHeaders, amazonXhrHeaders } from "./httpHeaders.js";
 
-const UA =
-  "amazon-kindle-cli/0.3.0 (+wishlist-http; https://github.com/zaydiscold/amazon-kindle-cli-mcp-api)";
-
 export interface WishlistHttpAddOptions {
   asin: string;
   /** Default Shopping List id when known (e.g. 26C3QAASCFU8S). Optional. */

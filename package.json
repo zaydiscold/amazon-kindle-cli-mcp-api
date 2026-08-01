@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.12.1",
   "scripts": {
     "build": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli build && corepack pnpm --filter @zaydiscold/amazon-kindle-mcp build",
-    "test": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli test && corepack pnpm --filter @zaydiscold/amazon-kindle-mcp test",
+    "test": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli test && corepack pnpm --filter @zaydiscold/amazon-kindle-mcp test && node scripts/test-python.mjs",
     "typecheck": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli typecheck && corepack pnpm --filter @zaydiscold/amazon-kindle-cli build && corepack pnpm --filter @zaydiscold/amazon-kindle-mcp typecheck",
     "lint": "eslint cli/src cli/test mcp/src mcp/test",
     "format": "prettier --write cli/src cli/test mcp/src mcp/test scripts",

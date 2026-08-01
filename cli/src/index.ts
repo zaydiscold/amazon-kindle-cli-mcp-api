@@ -38,6 +38,11 @@ program.command("doctor").action(async () => printJson(await engine.doctor(), tr
 const auth = program.command("auth").description("Amazon session auth");
 auth.command("status").action(async () => printJson(await engine.authStatus(), true));
 auth
+  .command("verify")
+  .description("Verify the persisted session against both Amazon retail and Kindle HTTP surfaces")
+  .option("--list-id <id>", "Wishlist id (or AMAZON_WISHLIST_ID)")
+  .action(async (opts) => printJson(await engine.authVerify({ listId: opts.listId }), true));
+auth
   .command("import")
   .requiredOption("--file <path>", "Cookie-Editor JSON / Netscape / raw Cookie header / PP portable JSON")
   .action(async (opts) => printJson(await engine.authImport({ file: opts.file }), true));

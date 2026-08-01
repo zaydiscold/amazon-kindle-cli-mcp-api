@@ -4,5 +4,7 @@ fixtures/
 .env
 *.log
 .DS_Store
+__pycache__/
+*.py[cod]
 cli/dist/
 mcp/dist/

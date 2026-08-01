@@ -9,9 +9,7 @@
  */
 import { cookieHeader } from "./live.js";
 import { amazonNavigateHeaders } from "./httpHeaders.js";
-import { parseWishlistHtml, type WishlistItem, type WishlistPage } from "../parsers/wishlist.js";
-
-const UA = "amazon-kindle-cli/0.3.0 (+wishlist-list-http)";
+import { parseWishlistHtml, type WishlistItem } from "../parsers/wishlist.js";
 
 export interface WishlistListHttpOptions {
   /** Full list URL or id. Default AMAZON_WISHLIST_ID or /hz/wishlist/ls */
@@ -20,12 +18,6 @@ export interface WishlistListHttpOptions {
   /** Max pagination hops (safety). Default 40. */
   maxPages?: number;
   fixture?: string;
-}
-
-function requireCookie(): string {
-  const c = cookieHeader();
-  if (!c) throw new Error("AMAZON_COOKIE required for wishlist list");
-  return c;
 }
 
 function resolveListUrl(opts: WishlistListHttpOptions): string {
@@ -58,16 +50,22 @@ export function extractShowMoreUrl(html: string): string | null {
   return null;
 }
 
-async function getHtml(url: string): Promise<{ status: number; text: string }> {
-  requireCookie();
+async function getHtml(url: string, withCookie: boolean): Promise<{ status: number; text: string; location: string | null }> {
+  const cookie = withCookie ? cookieHeader() || "" : "";
+  const headers = amazonNavigateHeaders(cookie, "https://www.amazon.com/hz/wishlist/ls");
+  if (!cookie) delete headers.cookie;
   const res = await fetch(url, {
     method: "GET",
-    headers: amazonNavigateHeaders(requireCookie(), "https://www.amazon.com/hz/wishlist/ls"),
+    headers,
     redirect: "manual",
     signal: AbortSignal.timeout(45_000),
   });
   const text = await res.text();
-  return { status: res.status, text };
+  return { status: res.status, text, location: res.headers.get("location") };
+}
+
+function isSignInRedirect(result: { status: number; location: string | null }): boolean {
+  return result.status >= 300 && result.status < 400 && /\/ap\/signin/i.test(result.location || "");
 }
 
 function mergeItems(into: WishlistItem[], page: WishlistItem[]): number {
@@ -89,6 +87,7 @@ export async function executeWishlistListHttp(opts: WishlistListHttpOptions = {}
   items: WishlistItem[];
   pagesFetched: number;
   via: "http";
+  sessionMode: "authenticated" | "public";
   truncated: boolean;
 }> {
   if (opts.fixture) {
@@ -101,15 +100,21 @@ export async function executeWishlistListHttp(opts: WishlistListHttpOptions = {}
       items: page.items,
       pagesFetched: 1,
       via: "http",
+      sessionMode: "public",
       truncated: false,
     };
   }
 
   const listUrl = resolveListUrl(opts);
   const maxPages = opts.maxPages ?? 40;
-  const first = await getHtml(listUrl);
+  let withCookie = Boolean(cookieHeader());
+  let first = await getHtml(listUrl, withCookie);
+  if (withCookie && isSignInRedirect(first)) {
+    withCookie = false;
+    first = await getHtml(listUrl, false);
+  }
   if (first.status >= 300 && first.status < 400) {
-    throw new Error(`wishlist list redirect ${first.status} — refresh AMAZON_COOKIE`);
+    throw new Error(`wishlist list redirect ${first.status}${first.location ? ` to ${first.location}` : ""}`);
   }
 
   const items: WishlistItem[] = [];
@@ -121,8 +126,14 @@ export async function executeWishlistListHttp(opts: WishlistListHttpOptions = {}
   let truncated = false;
 
   while (next && pagesFetched < maxPages) {
-    const more = await getHtml(next);
-    if (more.status >= 300 && more.status < 400) break;
+    let more = await getHtml(next, withCookie);
+    if (withCookie && isSignInRedirect(more)) {
+      withCookie = false;
+      more = await getHtml(next, false);
+    }
+    if (more.status >= 300 && more.status < 400) {
+      throw new Error(`wishlist pagination redirect ${more.status}${more.location ? ` to ${more.location}` : ""}`);
+    }
     // slv/items may return HTML fragment or JSON-wrapped HTML
     let html = more.text;
     try {
@@ -156,6 +167,7 @@ export async function executeWishlistListHttp(opts: WishlistListHttpOptions = {}
     items,
     pagesFetched,
     via: "http",
+    sessionMode: withCookie ? "authenticated" : "public",
     truncated,
   };
 }

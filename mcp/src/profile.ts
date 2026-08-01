@@ -1,6 +1,7 @@
 export const FULL_TOOL_NAMES = [
   "amazon_kindle_doctor",
   "amazon_kindle_auth_status",
+  "amazon_kindle_auth_verify",
   "amazon_kindle_auth_import",
   "amazon_kindle_wishlist_list",
   "amazon_kindle_wishlist_add",
@@ -16,6 +17,7 @@ export const FULL_TOOL_NAMES = [
 
 export const CORE_TOOL_NAMES = [
   "amazon_kindle_doctor",
+  "amazon_kindle_auth_verify",
   "amazon_kindle_wishlist_list",
   "amazon_kindle_wishlist_add",
   "amazon_kindle_send_plan",

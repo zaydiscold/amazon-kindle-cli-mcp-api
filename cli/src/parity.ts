@@ -35,9 +35,10 @@ export function normalizeAuthor(author: string | null | undefined): string {
     .trim();
 }
 
-export function bookKey(title: string | null, author?: string | null, _asin?: string | null): string {
+export function bookKey(title: string | null, author?: string | null, asin?: string | null): string {
   // Never make ASIN the only key: Goodreads records usually have no ASIN.
   // ASIN is an exact-match bonus in refsEqual; title+author is cross-surface identity.
+  void asin;
   const t = normalizeTitle(title);
   const a = normalizeAuthor(author);
   const alast = a.split(" ").filter(Boolean).slice(-1)[0] || "";

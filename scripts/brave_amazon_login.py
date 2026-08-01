@@ -38,8 +38,13 @@ def pick_page(browser):
     return ctx, page
 
 
+def cookies_for_product_origin(ctx):
+    """Return only cookies a browser would send to the Amazon product origin."""
+    return ctx.cookies("https://www.amazon.com/")
+
+
 def dump_cookies(ctx) -> dict:
-    cookies = ctx.cookies()
+    cookies = cookies_for_product_origin(ctx)
     amz = [c for c in cookies if "amazon" in (c.get("domain") or "")]
     names = sorted({c["name"] for c in amz})
     header = "; ".join(f"{c['name']}={c['value']}" for c in amz)
