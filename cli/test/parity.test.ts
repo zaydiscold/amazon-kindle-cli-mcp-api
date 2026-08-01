@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { bookKey, computeParity, normalizeTitle } from "../src/parity.js";
+import { parityCheck } from "../src/engine.js";
 
 describe("parity", () => {
   it("normalizes titles", () => {
@@ -23,5 +24,11 @@ describe("parity", () => {
     const k1 = bookKey("Roadkill", "Dennis E. Taylor");
     const k2 = bookKey("Roadkill", "Taylor");
     expect(k1).toBe(k2);
+  });
+
+  it("does not report an empty Amazon side when wishlist acquisition fails", async () => {
+    await expect(parityCheck({ fixture: "__missing_wishlist_fixture__.html" })).rejects.toThrow(
+      "wishlist read failed",
+    );
   });
 });

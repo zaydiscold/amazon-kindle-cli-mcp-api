@@ -125,12 +125,14 @@ sync
   .command("goodreads-plan")
   .option("--fixture <path>")
   .option("--url <url>")
+  .option("--list-id <id>", "Amazon wishlist id (or AMAZON_WISHLIST_ID)")
   .option("--user <id>", "Goodreads user id")
   .option("--direction <dir>", "amazon-to-goodreads | goodreads-to-amazon | both", "both")
   .action(async (opts) =>
     printJson(
       await engine.goodreadsSyncPlan({
         wishlistUrl: opts.url,
+        listId: opts.listId,
         fixture: opts.fixture,
         userId: opts.user,
         direction: opts.direction,
@@ -153,7 +155,8 @@ program
         userId: opts.user,
         shelf: opts.shelf,
         fixture: opts.fixture,
-        wishlistUrl: opts.url || (opts.listId ? `https://www.amazon.com/hz/wishlist/ls/${opts.listId}` : undefined),
+        wishlistUrl: opts.url,
+        listId: opts.listId,
       }),
       true,
     ),

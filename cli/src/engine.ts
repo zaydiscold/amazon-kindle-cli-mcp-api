@@ -321,13 +321,15 @@ export async function contentDevices(): Promise<CommandEnvelope> {
 export async function goodreadsSyncPlan(
   opts: {
     wishlistUrl?: string;
+    listId?: string;
     fixture?: string;
     userId?: string;
     direction?: "amazon-to-goodreads" | "goodreads-to-amazon" | "both";
   } = {},
 ): Promise<CommandEnvelope> {
   const direction = opts.direction || "both";
-  const wl = await wishlistList({ url: opts.wishlistUrl, fixture: opts.fixture });
+  const wl = await wishlistList({ url: opts.wishlistUrl, listId: opts.listId, fixture: opts.fixture });
+  if (!wl.ok) throw new Error(`wishlist read failed: ${JSON.stringify(wl.data)}`);
   const amazonItems =
     (wl.data as { items?: Array<{ title: string | null; author: string | null; asin: string | null }> })
       .items || [];
@@ -364,9 +366,10 @@ export async function goodreadsSyncPlan(
 }
 
 export async function parityCheck(
-  opts: { userId?: string; shelf?: string; wishlistUrl?: string; fixture?: string } = {},
+  opts: { userId?: string; shelf?: string; wishlistUrl?: string; listId?: string; fixture?: string } = {},
 ): Promise<CommandEnvelope> {
-  const wl = await wishlistList({ url: opts.wishlistUrl, fixture: opts.fixture });
+  const wl = await wishlistList({ url: opts.wishlistUrl, listId: opts.listId, fixture: opts.fixture });
+  if (!wl.ok) throw new Error(`wishlist read failed: ${JSON.stringify(wl.data)}`);
   const amazonItems =
     (wl.data as { items?: Array<{ title: string | null; author: string | null; asin: string | null }> })
       .items || [];
