@@ -1,5 +1,21 @@
 # amazon-kindle-cli
 
+**HTTP-first** Kindle + Amazon list CLI/MCP. Unofficial. One engine, CLI↔MCP parity, dry-run by default.
+
+**Product paths are scriptable requests only.** Browser/CDP is for cookie capture + contract mapping — never scroll/click runtime.
+
+| Flow | HTTP |
+|---|---|
+| wishlist list | `GET /hz/wishlist/ls/{id}` + `GET /hz/wishlist/slv/items?paginationToken=` |
+| wishlist add | `GET /dp/{ASIN}` CSRF → `POST /hz/wishlist/additemtolist?ie=UTF8` |
+| kindle send | `init → PUT → send-v2 → recent-docs` |
+| kindle recent | `GET /sendtokindle/recent-docs` |
+
+Sibling Goodreads parity: [goodreads-cli-mcp-api](https://github.com/zaydiscold/goodreads-cli-mcp-api).
+
+
+# amazon-kindle-cli
+
 **Kindle-first** Amazon CLI + MCP. Unofficial. One engine, CLI↔MCP parity, dry-run by default.
 
 Bookstore photo → wishlist ASIN → Goodreads `to-read`. EPUB on disk → Send to Kindle. Agent-native.

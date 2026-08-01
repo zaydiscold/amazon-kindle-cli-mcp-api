@@ -30,7 +30,7 @@ loadAuthFile();
 const program = new Command();
 program
   .name("amazon-kindle-cli")
-  .description("Kindle-first Amazon CLI + MCP — parity with Goodreads, dual send paths")
+  .description("Kindle-first Amazon CLI + MCP — HTTP/scriptable only (auth capture is separate)")
   .option("--json", "JSON output", true);
 
 program.command("doctor").action(async () => printJson(await engine.doctor(), true));
@@ -42,21 +42,32 @@ auth
   .requiredOption("--file <path>", "Cookie-Editor JSON / Netscape / raw Cookie header / PP portable JSON")
   .action(async (opts) => printJson(await engine.authImport({ file: opts.file }), true));
 
-const wishlist = program.command("wishlist").description("Amazon wish lists");
+const wishlist = program.command("wishlist").description("Amazon wish lists (HTTP)");
 wishlist
   .command("list")
+  .description("List wishlist items via HTTP + slv/items pagination (no browser scroll)")
   .option("--url <url>", "Wishlist URL")
+  .option("--list-id <id>", "Wishlist id (or AMAZON_WISHLIST_ID)")
+  .option("--max-pages <n>", "Max pagination hops", "40")
   .option("--fixture <path>", "Local HTML fixture")
-  .action(async (opts) => printJson(await engine.wishlistList(opts), true));
+  .action(async (opts) =>
+    printJson(
+      await engine.wishlistList({
+        url: opts.url,
+        listId: opts.listId,
+        fixture: opts.fixture,
+        maxPages: Number(opts.maxPages) || 40,
+      }),
+      true,
+    ),
+  );
 wishlist
   .command("add")
-  .description("Add ASIN to Amazon list via HTTP (default) or browser CDP fallback (dry-run default)")
+  .description("Add ASIN via POST /hz/wishlist/additemtolist (dry-run default)")
   .option("--asin <asin>")
-  .option("--title <title>")
-  .option("--author <author>")
-  .option("--list-id <id>", "Wishlist id (default AMAZON_WISHLIST_ID or account default)")
-  .option("--list-name <name>", "Amazon list name (browser path)", "Shopping List")
-  .option("--via <path>", "http | browser", "http")
+  .option("--title <title>", "ignored for HTTP add — resolve ASIN first")
+  .option("--author <author>", "ignored for HTTP add — resolve ASIN first")
+  .option("--list-id <id>", "Wishlist id (default AMAZON_WISHLIST_ID)")
   .option("--execute", "Actually mutate the list", false)
   .action(async (opts) =>
     printJson(
@@ -65,26 +76,27 @@ wishlist
         title: opts.title,
         author: opts.author,
         listId: opts.listId,
-        listName: opts.listName,
-        via: opts.via === "browser" ? "browser" : "http",
         execute: Boolean(opts.execute),
       }),
       true,
     ),
   );
 
-const kindle = program.command("kindle").description("Kindle delivery + library");
+const kindle = program.command("kindle").description("Kindle delivery + library (HTTP)");
 kindle
   .command("send")
   .description("Send EPUB/PDF to Kindle via web upload (default) or email SMTP")
   .argument("<files...>", "Files to send")
-  .option("--via <path>", "web | email | browser", "web")
+  .option("--via <path>", "web | email", "web")
   .option("--kindle-email <email>", "you_xxx@kindle.com (email path)")
   .option("--archive", "Add to library (web path)", true)
   .option("--execute", "Actually send (default dry-run)", false)
   .option("--dry-run", "Force plan only", false)
   .action(async (files, opts) => {
-    const via = opts.via === "email" ? "email" : opts.via === "browser" ? "browser" : "web";
+    if (opts.via === "browser") {
+      throw new Error("browser send path removed — use --via web (HTTP) or --via email");
+    }
+    const via = opts.via === "email" ? "email" : "web";
     const fn = opts.execute && !opts.dryRun ? engine.kindleSend : engine.kindleSendPlan;
     printJson(
       await fn({
@@ -98,7 +110,7 @@ kindle
       true,
     );
   });
-kindle.command("recent").description("Recent Send-to-Kindle docs").action(async () => {
+kindle.command("recent").description("Recent Send-to-Kindle docs (HTTP)").action(async () => {
   printJson(await engine.kindleRecent(), true);
 });
 
@@ -129,18 +141,19 @@ sync
 
 program
   .command("parity")
-  .description("Diff Amazon wishlist vs Goodreads shelf (to-read default)")
+  .description("Diff Amazon wishlist (HTTP full page walk) vs Goodreads shelf")
   .option("--user <id>", "Goodreads user id")
   .option("--shelf <slug>", "Goodreads shelf", "to-read")
   .option("--fixture <path>")
   .option("--url <url>")
+  .option("--list-id <id>")
   .action(async (opts) =>
     printJson(
       await engine.parityCheck({
         userId: opts.user,
         shelf: opts.shelf,
         fixture: opts.fixture,
-        wishlistUrl: opts.url,
+        wishlistUrl: opts.url || (opts.listId ? `https://www.amazon.com/hz/wishlist/ls/${opts.listId}` : undefined),
       }),
       true,
     ),

@@ -24,14 +24,23 @@
       }
     },
     "/hz/wishlist/additemtolist": {
-      "post": {
-        "summary": "Add ASIN to wishlist (AJAX) — live-mapped 2026-08-01",
-        "description": "Form body: asin, vendorId=website.wishlist.detail.add, listType=wishlist, isAjax=1, optional listId. Header anti-csrftoken-a2z from GET /dp/{ASIN}.",
-        "x-mutatesAccount": true,
-        "x-liveVerified": "2026-08-01",
-        "tags": ["kindle", "wishlist"]
-      }
-    },
+          "post": {
+            "summary": "Add ASIN to wishlist (AJAX) — live-mapped 2026-08-01",
+            "description": "Form body: asin, vendorId=website.wishlist.detail.add, listType=wishlist, isAjax=1, optional listId. Header anti-csrftoken-a2z from GET /dp/{ASIN}. Query ie=UTF8.",
+            "x-mutatesAccount": true,
+            "x-liveVerified": "2026-08-01",
+            "tags": ["kindle", "wishlist"]
+          }
+        },
+        "/hz/wishlist/slv/items": {
+          "get": {
+            "summary": "Wishlist pagination (show more) — live-mapped 2026-08-01",
+            "description": "Query: filter=unpurchased&paginationToken=… from list page showMoreUrl. Returns HTML fragment or JSON with more items.",
+            "x-mutatesAccount": false,
+            "x-liveVerified": "2026-08-01",
+            "tags": ["kindle", "wishlist"]
+          }
+        },
     "/sendtokindle": {
       "get": {
         "summary": "Send to Kindle home",

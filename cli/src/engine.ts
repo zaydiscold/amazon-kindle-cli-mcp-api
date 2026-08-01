@@ -2,10 +2,8 @@ import { envelope, type CommandEnvelope } from "./lib.js";
 import { executeAmazonGet } from "./client/live.js";
 import { executeKindleSend, planKindleSend, type KindleSendOptions } from "./client/kindleSend.js";
 import { executeWebUpload, planWebUpload, recentDocs } from "./client/kindleWebUpload.js";
-import { browserSendToKindle } from "./client/kindleBrowser.js";
-import { browserWishlistAdd } from "./client/wishlistBrowser.js";
 import { executeWishlistHttpAdd, planWishlistHttpAdd } from "./client/wishlistHttp.js";
-import { parseWishlistHtml } from "./parsers/wishlist.js";
+import { wishlistListHttp } from "./client/wishlistListHttp.js";
 import { emitLiveMutationWarning } from "./risk.js";
 import { bookKey, computeParity, type BookRef } from "./parity.js";
 import { fetchGoodreadsShelfRss, searchGoodreadsBookId } from "./client/goodreadsBridge.js";
@@ -89,11 +87,12 @@ export async function doctor(): Promise<CommandEnvelope> {
     live,
     capabilities: CAPABILITIES.map((c) => c.key),
     sendPaths: ["web (POST /sendtokindle/*)", "email (SMTP → KINDLE_EMAIL)"],
-    notes: [
-      "Preferred Kindle path: web upload via AMAZON_COOKIE (no SMTP).",
-      "Parity: amazon wishlist ↔ goodreads to-read (RSS).",
-      "Brave CDP :9333 profile amazon-kindle-debug-profile for session refresh.",
-    ],
+        notes: [
+          "All product paths are HTTP/scriptable. Browser is auth-capture only, not runtime.",
+          "Wishlist list: GET ls + paginate GET /hz/wishlist/slv/items?paginationToken=…",
+          "Wishlist add: GET /dp/{ASIN} CSRF → POST /hz/wishlist/additemtolist",
+          "Kindle send default: web upload. Parity via wishlist HTTP + Goodreads RSS.",
+        ],
   });
 }
 
@@ -179,25 +178,26 @@ export async function authImport(opts: { file?: string; header?: string }): Prom
   });
 }
 
-export async function wishlistList(opts: { url?: string; fixture?: string } = {}): Promise<CommandEnvelope> {
-  let html: string;
-  if (opts.fixture) {
-    html = await readFileAsync(opts.fixture, "utf8");
-  } else {
-    const url = opts.url || "https://www.amazon.com/hz/wishlist/ls";
-    const res = await executeAmazonGet(url);
-    if (res.status >= 300 && res.status < 400) {
-      return envelope(
-        "wishlist-list",
-        "read",
-        { redirected: true, status: res.status },
-        { ok: false, warnings: ["session redirect — re-login Brave CDP or re-import AMAZON_COOKIE"] },
-      );
-    }
-    html = res.text;
+export async function wishlistList(
+  opts: { url?: string; listId?: string; fixture?: string; maxPages?: number } = {},
+): Promise<CommandEnvelope> {
+  try {
+    const result = await wishlistListHttp({
+      url: opts.url,
+      listId: opts.listId,
+      fixture: opts.fixture,
+      maxPages: opts.maxPages,
+    });
+    return envelope("wishlist-list", "read", result);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return envelope(
+      "wishlist-list",
+      "read",
+      { error: msg },
+      { ok: false, warnings: [msg.includes("redirect") ? "session redirect — re-import AMAZON_COOKIE via auth import" : msg] },
+    );
   }
-  const page = parseWishlistHtml(html);
-  return envelope("wishlist-list", "read", page);
 }
 
 export async function wishlistAdd(opts: {
@@ -206,25 +206,10 @@ export async function wishlistAdd(opts: {
   author?: string;
   listName?: string;
   listId?: string;
-  /** http (default, mapped POST /hz/wishlist/additemtolist) | browser (CDP fallback) */
-  via?: "http" | "browser";
   execute?: boolean;
 }): Promise<CommandEnvelope> {
-  const via = opts.via || "http";
-  if (via === "browser") {
-    const query = opts.asin ? undefined : [opts.title, opts.author].filter(Boolean).join(" ");
-    if (!opts.asin && !query) throw new Error("asin or title required");
-    const plan = await browserWishlistAdd({
-      asin: opts.asin,
-      query,
-      listName: opts.listName,
-      execute: Boolean(opts.execute),
-    });
-    return envelope("wishlist-add", "write-mutate", { via, ...plan });
-  }
-
   if (!opts.asin) {
-    throw new Error("asin required for HTTP wishlist add (resolve title→ASIN first, or --via browser)");
+    throw new Error("asin required for wishlist add (HTTP). Resolve title→ASIN first.");
   }
   if (!opts.execute) {
     const plan = await planWishlistHttpAdd({
@@ -257,13 +242,9 @@ function wishlistToRefs(
 }
 
 export async function kindleSendPlan(
-  opts: KindleSendOptions & { via?: "email" | "web" | "browser" },
+  opts: KindleSendOptions & { via?: "email" | "web" },
 ): Promise<CommandEnvelope> {
   const via = opts.via || (opts.kindleEmail || process.env.KINDLE_EMAIL ? "email" : "web");
-  if (via === "browser") {
-    const result = await browserSendToKindle({ files: opts.files, execute: false });
-    return envelope("kindle-send-plan", "read", result);
-  }
   if (via === "web") {
     const plan = await planWebUpload({ files: opts.files, execute: false, dryRun: true });
     return envelope("kindle-send-plan", "read", { via, ...plan });
@@ -273,18 +254,9 @@ export async function kindleSendPlan(
 }
 
 export async function kindleSend(
-  opts: KindleSendOptions & { via?: "email" | "web" | "browser"; archive?: boolean },
+  opts: KindleSendOptions & { via?: "email" | "web"; archive?: boolean },
 ): Promise<CommandEnvelope> {
   const via = opts.via || "web";
-  if (via === "browser") {
-    if (!opts.execute) {
-      const plan = await browserSendToKindle({ files: opts.files, execute: false, archive: opts.archive });
-      return envelope("kindle-send", "write-mutate", plan);
-    }
-    emitLiveMutationWarning("Send-to-Kindle BROWSER upload");
-    const result = await browserSendToKindle({ files: opts.files, execute: true, archive: opts.archive });
-    return envelope("kindle-send", "write-mutate", result);
-  }
   if (via === "web") {
     const plan = await planWebUpload({
       files: opts.files,
