@@ -141,6 +141,7 @@ add(
   "amazon_kindle_goodreads_sync_plan",
   {
     url: z.string().optional(),
+    listId: z.string().optional(),
     fixture: z.string().optional(),
     userId: z.string().optional(),
     direction: z.enum(["amazon-to-goodreads", "goodreads-to-amazon", "both"]).optional(),
@@ -148,6 +149,7 @@ add(
   async (a) =>
     engine.goodreadsSyncPlan({
       wishlistUrl: a.url as string | undefined,
+      listId: a.listId as string | undefined,
       fixture: a.fixture as string | undefined,
       userId: a.userId as string | undefined,
       direction: a.direction as "amazon-to-goodreads" | "goodreads-to-amazon" | "both" | undefined,
@@ -159,6 +161,7 @@ add(
     userId: z.string().optional(),
     shelf: z.string().optional(),
     url: z.string().optional(),
+    listId: z.string().optional(),
     fixture: z.string().optional(),
   },
   async (a) =>
@@ -166,6 +169,7 @@ add(
       userId: a.userId as string | undefined,
       shelf: a.shelf as string | undefined,
       wishlistUrl: a.url as string | undefined,
+      listId: a.listId as string | undefined,
       fixture: a.fixture as string | undefined,
     }),
 );
