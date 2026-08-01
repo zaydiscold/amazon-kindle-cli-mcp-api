@@ -176,7 +176,7 @@ async function postAdd(
   body.set("isAjax", "1");
   if (plan.listId) body.set("listId", plan.listId);
 
-  const res = await fetch("https://www.amazon.com/hz/wishlist/additemtolist", {
+  const res = await fetch("https://www.amazon.com/hz/wishlist/additemtolist?ie=UTF8", {
     method: "POST",
     headers: {
       cookie,

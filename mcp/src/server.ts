@@ -67,21 +67,40 @@ add(
 );
 add(
   "amazon_kindle_wishlist_list",
-  { url: z.string().optional(), fixture: z.string().optional() },
+  {
+    url: z.string().optional(),
+    listId: z.string().optional(),
+    fixture: z.string().optional(),
+    maxPages: z.number().optional(),
+  },
   async (a) =>
-    engine.wishlistList({ url: a.url as string | undefined, fixture: a.fixture as string | undefined }),
+    engine.wishlistList({
+      url: a.url as string | undefined,
+      listId: a.listId as string | undefined,
+      fixture: a.fixture as string | undefined,
+      maxPages: a.maxPages as number | undefined,
+    }),
 );
 add(
   "amazon_kindle_wishlist_add",
-  { asin: z.string().optional(), title: z.string().optional(), author: z.string().optional(), listName: z.string().optional(), execute: z.boolean().default(false) },
-  async (a) => engine.wishlistAdd({ asin: a.asin as string | undefined, title: a.title as string | undefined, author: a.author as string | undefined, listName: a.listName as string | undefined, execute: Boolean(a.execute) }),
+  {
+    asin: z.string(),
+    listId: z.string().optional(),
+    execute: z.boolean().default(false),
+  },
+  async (a) =>
+    engine.wishlistAdd({
+      asin: a.asin as string,
+      listId: a.listId as string | undefined,
+      execute: Boolean(a.execute),
+    }),
   false,
 );
 add(
   "amazon_kindle_send_plan",
   {
     files: z.array(z.string()),
-    via: z.enum(["web", "browser", "email"]).optional(),
+    via: z.enum(["web", "email"]).optional(),
     kindleEmail: z.string().optional(),
   },
   async (a) =>
@@ -95,7 +114,7 @@ add(
   "amazon_kindle_send",
   {
     files: z.array(z.string()),
-    via: z.enum(["web", "browser", "email"]).optional(),
+    via: z.enum(["web", "email"]).optional(),
     kindleEmail: z.string().optional(),
     execute: z.boolean().default(false),
     archive: z.boolean().optional(),

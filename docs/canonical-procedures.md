@@ -1,56 +1,59 @@
-# Amazon/KIndle CLI — Canonical Working Procedures
+# Amazon/Kindle CLI — Canonical Working Procedures
+
+**Rule: product paths are HTTP/scriptable only.** Browser/CDP is for **auth capture + API mapping**, never runtime scroll/click automation.
 
 ## Book mesh
 
 | Intent | Command / tool | Remote write? |
 |---|---|---|
-| inspect Amazon reading queue | `wishlist list` | no |
-| inspect Goodreads to-read | `parity` / RSS | no |
+| inspect Amazon reading queue | `wishlist list --list-id …` | no (HTTP + slv pagination) |
+| inspect Goodreads to-read | Goodreads CLI / RSS | no |
 | diff queues | `parity --user 179929687` | no |
 | plan both-way reconciliation | `sync goodreads-plan --direction both` | no |
 | photo/title → multi-surface routing | `books resolve` / `add-plan` | no |
-| add a resolved book to Amazon list | `wishlist add --asin … --execute` | yes, browser-gated |
-| add to Goodreads | `goodreads_shelf_add` / Goodreads CLI | yes, execute-gated |
-| put an EPUB/PDF on Kindle | `kindle send … --via web|browser|email --execute` | yes, execute-gated |
+| add resolved book to Amazon list | `wishlist add --asin … --execute` | yes, HTTP |
+| add to Goodreads | goodreads-cli `shelves add` | yes, execute-gated |
+| put EPUB/PDF on Kindle | `kindle send … --via web\|email --execute` | yes, execute-gated |
 | verify Kindle conversion | `kindle recent` | no |
 
-## Three redundant Kindle delivery paths
+## HTTP contracts (mapped)
 
-1. **browser** — Brave CDP drives Amazon UI; default, independently proven
-2. **web** — direct HTTP: `init → signed PUT → send-v2`; mapped from live network traffic, alternate path
-3. **email** — approved SMTP sender → device address; independent of Amazon buyer cookie
+### Wishlist list
+1. `GET /hz/wishlist/ls/{listId}?sort=date-added&viewType=list`
+2. Parse items + `showMoreUrl`
+3. Loop `GET /hz/wishlist/slv/items?filter=…&paginationToken=…` until exhausted
 
-Default is `browser`; use `web` when its direct executor is desired. All three default to dry-run.
+### Wishlist add
+1. `GET /dp/{ASIN}` → `anti-csrftoken-a2z` from `#addToWishListForm`
+2. `POST /hz/wishlist/additemtolist?ie=UTF8`  
+   body: `asin`, `vendorId=website.wishlist.detail.add`, `listType=wishlist`, `isAjax=1`, optional `listId`
 
-## File proof
+### Kindle send (web)
+1. `GET /sendtokindle` → CSRF  
+2. `POST /sendtokindle/init` → uploadUrl  
+3. `PUT uploadUrl` bytes  
+4. `POST /sendtokindle/send-v2`  
+5. `GET /sendtokindle/recent-docs` receipt  
 
-`C:\Users\ZaydK\Desktop\A_Parade_of_Horribles_-_Matt_Dinniman.epub`
+Email path: SMTP → `KINDLE_EMAIL` (independent of buyer cookie).
 
-- 2,891,674 bytes
-- browser uploader reached Ready to Send
-- Send-to-Kindle `send-v2` accepted
-- `kindle recent` verified state `IN_LIBRARY`
+## Auth
+
+```bash
+source ~/.amazon/auth.sh   # AMAZON_COOKIE + optional AMAZON_WISHLIST_ID
+amazon-kindle-cli doctor
+amazon-kindle-cli auth status
+# refresh: Cookie-Editor / portable JSON → auth import --file …
+```
+
+CDP/Brave is **only** for minting a fresh cookie when session dies — not for wishlist/kindle product flows.
 
 ## Cross-surface matching
 
 `ASIN exact → Goodreads id exact → normalized title + author last name`.
 
-Never silently add a fuzzy match. A non-exact candidate is an add plan only.
+Never silently add a fuzzy match.
 
-## Photo intake
+## Inspiration / hub
 
-The vision agent should pass visible title/author OCR to:
-
-```text
-amazon_kindle_books_resolve { text: "title\nby author" }
-amazon_kindle_add_plan { title, author }
-```
-
-Then execute target-specific mutations only after resolution.
-
-## Amazon orders methodology adopted
-
-- portable auth JSON `{cookies: "…"}` ↔ `amazon-orders-pp-cli auth import`
-- agent JSON envelopes, dry-runs, profiles/receipts mentality
-- local/offline state is an optional orders concern, not mixed into Kindle core
-- strong source/provenance: `recent-docs` is the actual delivery receipt
+Same CLI mesh pattern as Printing Press + goodreads-cli: api-map first, dry-run default, CLI↔MCP parity, JSON envelopes.
