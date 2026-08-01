@@ -104,3 +104,9 @@ Bootstrap: `scripts/amazon-kindle-mcp.cmd` / `.sh`
 ## License
 
 MIT
+
+### Haul + sync tips
+- Prefer one ASIN per work (avoid study-guide / wrong-title search hits).
+- After bulk adds, open the list sorted by **date-added** and scroll — Amazon lazy-loads; a short first paint is not the full list.
+- Bidirectional parity: `parity` / `sync goodreads-plan` here + Goodreads `shelves add/remove`. Sibling: https://github.com/zaydiscold/goodreads-cli-mcp-api
+- Product direction: simple web app — OAuth/session login for Amazon + Goodreads, drag bookstore photos, dual-list add + sync.
