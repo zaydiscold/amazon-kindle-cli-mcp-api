@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Amazon/Kindle buyer surface",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Full amazon.com buyer surface for Kindle, content, and wishlist operations."
   },
   "servers": [
@@ -15,109 +15,91 @@
       "get": {
         "summary": "Get default wishlist HTML",
         "x-mutatesAccount": false,
-        "tags": [
-          "kindle"
-        ]
+        "tags": ["kindle", "wishlist"]
       },
       "post": {
-        "summary": "Add to wishlist (form)",
+        "summary": "Add to wishlist (legacy form)",
         "x-mutatesAccount": true,
-        "tags": [
-          "kindle"
-        ]
+        "tags": ["kindle", "wishlist"]
+      }
+    },
+    "/hz/wishlist/additemtolist": {
+      "post": {
+        "summary": "Add ASIN to wishlist (AJAX) — live-mapped 2026-08-01",
+        "description": "Form body: asin, vendorId=website.wishlist.detail.add, listType=wishlist, isAjax=1, optional listId. Header anti-csrftoken-a2z from GET /dp/{ASIN}.",
+        "x-mutatesAccount": true,
+        "x-liveVerified": "2026-08-01",
+        "tags": ["kindle", "wishlist"]
       }
     },
     "/sendtokindle": {
       "get": {
         "summary": "Send to Kindle home",
         "x-mutatesAccount": false,
-        "tags": [
-          "kindle"
-        ]
+        "tags": ["kindle"]
       }
     },
     "/sendtokindle/init": {
       "post": {
         "summary": "Init file upload session",
         "x-mutatesAccount": true,
-        "tags": [
-          "kindle"
-        ]
+        "tags": ["kindle"]
       }
     },
     "/sendtokindle/upload": {
       "put": {
         "summary": "Upload file bytes to presigned URL",
         "x-mutatesAccount": true,
-        "tags": [
-          "kindle"
-        ]
+        "tags": ["kindle"]
       }
     },
     "/sendtokindle/send-v2": {
       "post": {
         "summary": "Complete send to kindle",
         "x-mutatesAccount": true,
-        "tags": [
-          "kindle"
-        ]
+        "tags": ["kindle"]
       }
     },
     "/sendtokindle/recent-docs": {
       "get": {
         "summary": "List recent STK docs",
         "x-mutatesAccount": false,
-        "tags": [
-          "kindle"
-        ]
+        "tags": ["kindle"]
       }
     },
     "/sendtokindle/dnd-metrics": {
       "post": {
         "summary": "STK telemetry",
         "x-mutatesAccount": true,
-        "tags": [
-          "kindle"
-        ]
+        "tags": ["kindle"]
       }
     },
     "/hz/mycd/digital-console/contentlist/booksAll/dateDsc/": {
       "get": {
         "summary": "List Kindle books",
         "x-mutatesAccount": false,
-        "tags": [
-          "kindle",
-          "content"
-        ]
+        "tags": ["kindle", "content"]
       }
     },
     "/hz/mycd/digital-console/contentlist/pdocs/dateDsc/": {
       "get": {
         "summary": "List personal docs",
         "x-mutatesAccount": false,
-        "tags": [
-          "kindle",
-          "content"
-        ]
+        "tags": ["kindle", "content"]
       }
     },
     "/hz/mycd/myx": {
       "get": {
         "summary": "Manage Your Content root",
         "x-mutatesAccount": false,
-        "tags": [
-          "kindle",
-          "content"
-        ]
+        "tags": ["kindle", "content"]
       }
     },
     "/gp/digital/fiona/manage": {
       "get": {
         "summary": "Legacy device management",
         "x-mutatesAccount": false,
-        "tags": [
-          "kindle"
-        ]
+        "tags": ["kindle"]
       }
     }
   }

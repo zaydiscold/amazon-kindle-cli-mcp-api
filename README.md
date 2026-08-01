@@ -4,16 +4,20 @@
 
 Bookstore photo → wishlist ASIN → Goodreads `to-read`. EPUB on disk → Send to Kindle. Agent-native.
 
+> **Bookstore photos → lists (live).** Snap stacks in a shop, resolve titles/ASINs, then `wishlist add --execute`. With sibling [goodreads-cli-mcp-api](https://github.com/zaydiscold/goodreads-cli-mcp-api) (`shelves add --name to-read`) you get **parity both ways**: Goodreads Want to Read ↔ Amazon wishlist / Kindle surface on the same haul. `parity` + `sync goodreads-plan` are the bridge commands.
+
+**Last shipped update (feature branch):** default Kindle send path is **API web upload** (`--via web`), not browser automation. See PR [#1](https://github.com/zaydiscold/amazon-kindle-cli-mcp-api/pull/1).
+
 ## Why this exists
 
 Sibling of [goodreads-cli-mcp-api](https://github.com/zaydiscold/goodreads-cli-mcp-api) and [robinhood-cli-mcp-api](https://github.com/zaydiscold/robinhood-cli-mcp-api).  
-**Not** bolted onto Goodreads — separate cookie surface, orchestrated together.
+**Not** bolted onto Goodreads — separate cookie surface, orchestrated together for list parity.
 
 Hero paths:
 
-1. **`kindle send`** — EPUB/PDF → your `@kindle.com` address (SMTP, no Amazon cookie)
-2. **`wishlist list`** — buyer session → ASINs/titles for Goodreads bridge
-3. **`sync goodreads-plan`** — dry-run map wishlist → `goodreads_shelf_add`
+1. **`kindle send`** — EPUB/PDF → your `@kindle.com` address (web upload default; SMTP also available)
+2. **`wishlist list` / `wishlist add`** — buyer session → ASINs/titles; photo-haul adds land here
+3. **`parity` / `sync goodreads-plan`** — dry-run map wishlist ↔ Goodreads `to-read` (execute shelves on the Goodreads CLI)
 
 ## Quick start
 
@@ -32,6 +36,11 @@ amazon-kindle-cli kindle send ./book.epub --execute
 # Direct HTTP path — mapped from the live flow; use intentionally
 amazon-kindle-cli kindle send ./book.epub --via web --execute
 ```
+
+## Wishlist HTTP (default)
+
+`wishlist add --asin … --execute` → `GET /dp/{ASIN}` (CSRF from `#addToWishListForm`) → `POST /hz/wishlist/additemtolist`.
+Browser CDP is `--via browser` fallback only.
 
 ## Auth
 
@@ -100,3 +109,9 @@ Bootstrap: `scripts/amazon-kindle-mcp.cmd` / `.sh`
 ## License
 
 MIT
+
+### Haul + sync tips
+- Prefer one ASIN per work (avoid study-guide / wrong-title search hits).
+- After bulk adds, open the list sorted by **date-added** and scroll — Amazon lazy-loads; a short first paint is not the full list.
+- Bidirectional parity: `parity` / `sync goodreads-plan` here + Goodreads `shelves add/remove`. Sibling: https://github.com/zaydiscold/goodreads-cli-mcp-api
+- Product direction: simple web app — OAuth/session login for Amazon + Goodreads, drag bookstore photos, dual-list add + sync.

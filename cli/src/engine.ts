@@ -4,6 +4,7 @@ import { executeKindleSend, planKindleSend, type KindleSendOptions } from "./cli
 import { executeWebUpload, planWebUpload, recentDocs } from "./client/kindleWebUpload.js";
 import { browserSendToKindle } from "./client/kindleBrowser.js";
 import { browserWishlistAdd } from "./client/wishlistBrowser.js";
+import { executeWishlistHttpAdd, planWishlistHttpAdd } from "./client/wishlistHttp.js";
 import { parseWishlistHtml } from "./parsers/wishlist.js";
 import { emitLiveMutationWarning } from "./risk.js";
 import { bookKey, computeParity, type BookRef } from "./parity.js";
@@ -204,17 +205,43 @@ export async function wishlistAdd(opts: {
   title?: string;
   author?: string;
   listName?: string;
+  listId?: string;
+  /** http (default, mapped POST /hz/wishlist/additemtolist) | browser (CDP fallback) */
+  via?: "http" | "browser";
   execute?: boolean;
 }): Promise<CommandEnvelope> {
-  const query = opts.asin ? undefined : [opts.title, opts.author].filter(Boolean).join(" ");
-  if (!opts.asin && !query) throw new Error("asin or title required");
-  const plan = await browserWishlistAdd({
+  const via = opts.via || "http";
+  if (via === "browser") {
+    const query = opts.asin ? undefined : [opts.title, opts.author].filter(Boolean).join(" ");
+    if (!opts.asin && !query) throw new Error("asin or title required");
+    const plan = await browserWishlistAdd({
+      asin: opts.asin,
+      query,
+      listName: opts.listName,
+      execute: Boolean(opts.execute),
+    });
+    return envelope("wishlist-add", "write-mutate", { via, ...plan });
+  }
+
+  if (!opts.asin) {
+    throw new Error("asin required for HTTP wishlist add (resolve title→ASIN first, or --via browser)");
+  }
+  if (!opts.execute) {
+    const plan = await planWishlistHttpAdd({
+      asin: opts.asin,
+      listId: opts.listId,
+      execute: false,
+      dryRun: true,
+    });
+    return envelope("wishlist-add", "write-mutate", { submitted: false, via: "http", plan });
+  }
+  emitLiveMutationWarning("Amazon wishlist HTTP add (POST /hz/wishlist/additemtolist)");
+  const result = await executeWishlistHttpAdd({
     asin: opts.asin,
-    query,
-    listName: opts.listName,
-    execute: Boolean(opts.execute),
+    listId: opts.listId || process.env.AMAZON_WISHLIST_ID || undefined,
+    execute: true,
   });
-  return envelope("wishlist-add", "write-mutate", plan);
+  return envelope("wishlist-add", "write-mutate", result);
 }
 
 function wishlistToRefs(
@@ -232,7 +259,7 @@ function wishlistToRefs(
 export async function kindleSendPlan(
   opts: KindleSendOptions & { via?: "email" | "web" | "browser" },
 ): Promise<CommandEnvelope> {
-  const via = opts.via || (opts.kindleEmail || process.env.KINDLE_EMAIL ? "email" : "browser");
+  const via = opts.via || (opts.kindleEmail || process.env.KINDLE_EMAIL ? "email" : "web");
   if (via === "browser") {
     const result = await browserSendToKindle({ files: opts.files, execute: false });
     return envelope("kindle-send-plan", "read", result);
@@ -248,7 +275,7 @@ export async function kindleSendPlan(
 export async function kindleSend(
   opts: KindleSendOptions & { via?: "email" | "web" | "browser"; archive?: boolean },
 ): Promise<CommandEnvelope> {
-  const via = opts.via || "browser";
+  const via = opts.via || "web";
   if (via === "browser") {
     if (!opts.execute) {
       const plan = await browserSendToKindle({ files: opts.files, execute: false, archive: opts.archive });
