@@ -17,5 +17,11 @@ pnpm install && pnpm build && pnpm test
 - Fallback: Cookie-Editor JSON → `auth import`
 - Never claim silent Chrome cookie DB decrypt works on modern ABE Chrome
 
+## Bookstore photos + Goodreads parity
+- Photo haul → resolve ASIN → `wishlist add --execute` is a live path.
+- Sibling https://github.com/zaydiscold/goodreads-cli-mcp-api : `shelves add --name to-read --execute`.
+- Bridge: `parity`, `sync goodreads-plan` (dry-run map). Execute shelves on Goodreads CLI.
+- Last feature push: default `kindle send --via web` (PR #1).
+
 ## Goodreads bridge
 `sync goodreads-plan` only. Execute shelf adds via goodreads-cli MCP with separate cookie.

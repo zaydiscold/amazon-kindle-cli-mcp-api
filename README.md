@@ -4,16 +4,20 @@
 
 Bookstore photo → wishlist ASIN → Goodreads `to-read`. EPUB on disk → Send to Kindle. Agent-native.
 
+> **Bookstore photos → lists (live).** Snap stacks in a shop, resolve titles/ASINs, then `wishlist add --execute`. With sibling [goodreads-cli-mcp-api](https://github.com/zaydiscold/goodreads-cli-mcp-api) (`shelves add --name to-read`) you get **parity both ways**: Goodreads Want to Read ↔ Amazon wishlist / Kindle surface on the same haul. `parity` + `sync goodreads-plan` are the bridge commands.
+
+**Last shipped update (feature branch):** default Kindle send path is **API web upload** (`--via web`), not browser automation. See PR [#1](https://github.com/zaydiscold/amazon-kindle-cli-mcp-api/pull/1).
+
 ## Why this exists
 
 Sibling of [goodreads-cli-mcp-api](https://github.com/zaydiscold/goodreads-cli-mcp-api) and [robinhood-cli-mcp-api](https://github.com/zaydiscold/robinhood-cli-mcp-api).  
-**Not** bolted onto Goodreads — separate cookie surface, orchestrated together.
+**Not** bolted onto Goodreads — separate cookie surface, orchestrated together for list parity.
 
 Hero paths:
 
-1. **`kindle send`** — EPUB/PDF → your `@kindle.com` address (SMTP, no Amazon cookie)
-2. **`wishlist list`** — buyer session → ASINs/titles for Goodreads bridge
-3. **`sync goodreads-plan`** — dry-run map wishlist → `goodreads_shelf_add`
+1. **`kindle send`** — EPUB/PDF → your `@kindle.com` address (web upload default; SMTP also available)
+2. **`wishlist list` / `wishlist add`** — buyer session → ASINs/titles; photo-haul adds land here
+3. **`parity` / `sync goodreads-plan`** — dry-run map wishlist ↔ Goodreads `to-read` (execute shelves on the Goodreads CLI)
 
 ## Quick start
 
