@@ -63,7 +63,7 @@ kindle
   .command("send")
   .description("Send EPUB/PDF to Kindle via web upload (default) or email SMTP")
   .argument("<files...>", "Files to send")
-  .option("--via <path>", "browser | web | email", "browser")
+  .option("--via <path>", "web | email | browser", "web")
   .option("--kindle-email <email>", "you_xxx@kindle.com (email path)")
   .option("--archive", "Add to library (web path)", true)
   .option("--execute", "Actually send (default dry-run)", false)

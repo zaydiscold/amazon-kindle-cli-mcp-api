@@ -232,7 +232,7 @@ function wishlistToRefs(
 export async function kindleSendPlan(
   opts: KindleSendOptions & { via?: "email" | "web" | "browser" },
 ): Promise<CommandEnvelope> {
-  const via = opts.via || (opts.kindleEmail || process.env.KINDLE_EMAIL ? "email" : "browser");
+  const via = opts.via || (opts.kindleEmail || process.env.KINDLE_EMAIL ? "email" : "web");
   if (via === "browser") {
     const result = await browserSendToKindle({ files: opts.files, execute: false });
     return envelope("kindle-send-plan", "read", result);
@@ -248,7 +248,7 @@ export async function kindleSendPlan(
 export async function kindleSend(
   opts: KindleSendOptions & { via?: "email" | "web" | "browser"; archive?: boolean },
 ): Promise<CommandEnvelope> {
-  const via = opts.via || "browser";
+  const via = opts.via || "web";
   if (via === "browser") {
     if (!opts.execute) {
       const plan = await browserSendToKindle({ files: opts.files, execute: false, archive: opts.archive });
