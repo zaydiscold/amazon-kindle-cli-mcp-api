@@ -9,8 +9,6 @@ import * as cheerio from "cheerio";
 import { cookieHeader } from "./live.js";
 import { amazonNavigateHeaders } from "./httpHeaders.js";
 
-const UA = "amazon-kindle-cli/0.3.1 (+wishlist-resolve-http)";
-
 export interface AmazonSearchCandidate {
   asin: string;
   title: string | null;

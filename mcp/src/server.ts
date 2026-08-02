@@ -60,6 +60,11 @@ function add(
 add("amazon_kindle_doctor", {}, async () => engine.doctor());
 add("amazon_kindle_auth_status", {}, async () => engine.authStatus());
 add(
+  "amazon_kindle_auth_verify",
+  { listId: z.string().optional() },
+  async (a) => engine.authVerify({ listId: a.listId as string | undefined }),
+);
+add(
   "amazon_kindle_auth_import",
   { file: z.string() },
   async (a) => engine.authImport({ file: String(a.file) }),

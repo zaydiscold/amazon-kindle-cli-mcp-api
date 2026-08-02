@@ -15,18 +15,18 @@ description: "Use when sending files to Kindle, reconciling Amazon books with Go
 ## Preflight
 
 ```bash
-source ~/.amazon/auth.sh
-amazon-kindle-cli doctor
+amazon-kindle-cli auth status
+amazon-kindle-cli auth verify
 ```
 
-Requires the dedicated **Brave CDP** session, not Chrome main profile:
+The CLI auto-loads `~/.amazon/auth.sh` from a cold shell. MCP is optional. Brave CDP is used only to refresh/capture the stored session when verification fails:
 
 ```text
 CDP: http://127.0.0.1:9333
 profile: %LOCALAPPDATA%\amazon-kindle-debug-profile
 ```
 
-If stale: launch `launch-brave.ps1`, login using `brave_amazon_login.py`, request OTP, then verify `doctor.live.status=200` + `signedInHint=true`.
+If stale: first harvest the already-authenticated Brave session with `brave_amazon_login.py --cookies-only`; request login/OTP only if the browser is genuinely signed out. Then use `auth verify`: require `readReady=true` for read workflows and `retailWriteReady=true` before wishlist mutations.
 
 ## Reading queue parity
 
@@ -39,13 +39,10 @@ amazon-kindle-cli sync goodreads-plan --direction both
 
 Match order: **ASIN → Goodreads ID → normalized title + author surname**. Never silently mutate a fuzzy match.
 
-## Three Kindle paths
+## Two Kindle product paths
 
 ```bash
-# Recommended: browser upload (Amazon's actual UI via Brave CDP)
-amazon-kindle-cli kindle send book.epub --via browser --execute
-
-# Direct HTTP alternate
+# Default: pure HTTP Send-to-Kindle web upload
 amazon-kindle-cli kindle send book.epub --via web --execute
 
 # SMTP fallback
@@ -63,7 +60,7 @@ Vision/OCR gives title+author, then:
 amazon-kindle-cli books resolve --text $'Title\nby Author'
 amazon-kindle-cli add-plan --title 'Title' --author 'Author'
 
-# Amazon list: browser-driven write, gated
+# Amazon list: pure HTTP write, gated
 amazon-kindle-cli wishlist add --asin BXXXXXXXXX --execute
 # Goodreads: use goodreads-cli shelf add with its own auth
 ```

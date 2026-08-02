@@ -38,8 +38,13 @@ def pick_page(browser):
     return ctx, page
 
 
+def cookies_for_product_origin(ctx):
+    """Return only cookies a browser would send to the Amazon product origin."""
+    return ctx.cookies("https://www.amazon.com/")
+
+
 def dump_cookies(ctx) -> dict:
-    cookies = ctx.cookies()
+    cookies = cookies_for_product_origin(ctx)
     amz = [c for c in cookies if "amazon" in (c.get("domain") or "")]
     names = sorted({c["name"] for c in amz})
     header = "; ".join(f"{c['name']}={c['value']}" for c in amz)
@@ -95,6 +100,13 @@ def signed_in(page) -> bool:
         return False
 
 
+def should_reuse_signed_in_session(
+    is_signed_in: bool, *, goto_signin: bool, email: str | None
+) -> bool:
+    """Reuse a signed-in page unless the caller explicitly requests recent auth."""
+    return is_signed_in and not goto_signin and not email
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--email")
@@ -114,7 +126,9 @@ def main() -> int:
             dump_cookies(ctx)
             return 0
 
-        if signed_in(page):
+        if should_reuse_signed_in_session(
+            signed_in(page), goto_signin=args.goto_signin, email=args.email
+        ):
             print("already_signed_in")
             dump_cookies(ctx)
             return 0

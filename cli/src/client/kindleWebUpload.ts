@@ -13,7 +13,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 import { cookieHeader } from "./live.js";
-import { AMAZON_HTTP_UA, amazonNavigateHeaders, amazonXhrHeaders } from "./httpHeaders.js";
+import { amazonXhrHeaders } from "./httpHeaders.js";
 
 const MIME: Record<string, string> = {
   ".epub": "application/epub+zip",
@@ -44,10 +44,6 @@ function nativePath(input: string): string {
   const m = input.match(/^C:\\c\\(.+)$/i);
   if (m) return `C:\\${m[1]}`;
   return input;
-}
-
-function ua(): string {
-  return AMAZON_HTTP_UA;
 }
 
 async function amazonFetch(

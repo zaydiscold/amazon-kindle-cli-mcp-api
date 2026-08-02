@@ -8,7 +8,7 @@ import { resolveAmazonSearchHttp, resolveWishlistTargetHttp } from "./client/wis
 import { emitLiveMutationWarning } from "./risk.js";
 import { bookKey, computeParity, type BookRef } from "./parity.js";
 import { fetchGoodreadsShelfRss, searchGoodreadsBookId } from "./client/goodreadsBridge.js";
-import { readFile, writeFile, mkdir, readFile as readFileAsync } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -16,6 +16,7 @@ import { join } from "node:path";
 export const CAPABILITIES = [
   { key: "doctor", cli: "doctor", mcpTool: "amazon_kindle_doctor", readOnly: true, risk: "read" as const },
   { key: "auth-status", cli: "auth status", mcpTool: "amazon_kindle_auth_status", readOnly: true, risk: "read" as const },
+  { key: "auth-verify", cli: "auth verify", mcpTool: "amazon_kindle_auth_verify", readOnly: true, risk: "read" as const },
   { key: "auth-import", cli: "auth import", mcpTool: "amazon_kindle_auth_import", readOnly: false, risk: "write-safe" as const },
   { key: "wishlist-list", cli: "wishlist list", mcpTool: "amazon_kindle_wishlist_list", readOnly: true, risk: "read" as const },
   { key: "wishlist-add", cli: "wishlist add", mcpTool: "amazon_kindle_wishlist_add", readOnly: false, risk: "write-mutate" as const },
@@ -111,6 +112,67 @@ export async function authStatus(): Promise<CommandEnvelope> {
       "ubid-main": names.includes("ubid-main"),
     },
   });
+}
+
+type AuthVerifyProbes = {
+  wishlist: () => Promise<unknown>;
+  kindle: () => Promise<{ status?: number; docs?: unknown }>;
+};
+
+export async function authVerify(
+  opts: { listId?: string } = {},
+  probes: AuthVerifyProbes = {
+    wishlist: () => wishlistListHttp({ listId: opts.listId, maxPages: 1 }),
+    kindle: () => recentDocs(),
+  },
+): Promise<CommandEnvelope> {
+  const cookie = process.env.AMAZON_COOKIE || process.env.AMAZON_COOKIES || "";
+  const results = await Promise.allSettled([probes.wishlist(), probes.kindle()]);
+  const retailReadable = results[0].status === "fulfilled";
+  const retailSessionMode =
+    results[0].status === "fulfilled" &&
+    typeof results[0].value === "object" &&
+    results[0].value !== null &&
+    "sessionMode" in results[0].value
+      ? String((results[0].value as { sessionMode?: unknown }).sessionMode)
+      : "authenticated";
+  const retailAuthenticated = retailReadable && retailSessionMode !== "public";
+  const kindleAuthenticated =
+    results[1].status === "fulfilled" &&
+    (results[1].value.status === undefined || (results[1].value.status >= 200 && results[1].value.status < 300));
+  const reason = (r: PromiseSettledResult<unknown>): string | null =>
+    r.status === "rejected" ? (r.reason instanceof Error ? r.reason.message : String(r.reason)) : null;
+  const ok = Boolean(cookie) && retailAuthenticated && kindleAuthenticated;
+
+  return envelope(
+    "auth-verify",
+    "read",
+    {
+      persistedSessionPresent: Boolean(cookie),
+      readReady: retailReadable && kindleAuthenticated,
+      retailReadable,
+      retailAuthenticated,
+      retailWriteReady: retailAuthenticated,
+      retailSessionMode,
+      kindleAuthenticated,
+      refreshRequired: !ok,
+      retailError: reason(results[0]),
+      kindleError: reason(results[1]),
+      recovery: ok
+        ? null
+        : retailReadable && kindleAuthenticated
+          ? "Public wishlist reads and Kindle are ready. Refresh recent Amazon retail authentication before wishlist mutations."
+          : "Refresh ~/.amazon/auth.sh from the authenticated browser or run auth import, then retry auth verify.",
+    },
+    {
+      ok,
+      warnings: ok
+        ? []
+        : retailReadable && kindleAuthenticated
+          ? ["Read paths are ready; wishlist writes require recent Amazon retail authentication"]
+          : ["One or more Amazon HTTP read surfaces are unavailable"],
+    },
+  );
 }
 
 export async function authImport(opts: { file?: string; header?: string }): Promise<CommandEnvelope> {

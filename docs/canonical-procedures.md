@@ -40,9 +40,8 @@ Email path: SMTP → `KINDLE_EMAIL` (independent of buyer cookie).
 ## Auth
 
 ```bash
-source ~/.amazon/auth.sh   # AMAZON_COOKIE + optional AMAZON_WISHLIST_ID
-amazon-kindle-cli doctor
 amazon-kindle-cli auth status
+amazon-kindle-cli auth verify   # auto-loads ~/.amazon/auth.sh; proves retail + Kindle
 # refresh: Cookie-Editor / portable JSON → auth import --file …
 ```
 

@@ -40,34 +40,31 @@ Hero paths:
 ```bash
 pnpm install && pnpm build && pnpm test
 
-# Amazon session (Brave CDP debug browser on :9333 is the supported path)
-source ~/.amazon/auth.sh   # from brave_amazon_login.py dump
-amazon-kindle-cli doctor
+# Persisted Amazon session auto-loads from ~/.amazon/auth.sh
+amazon-kindle-cli auth verify   # proves retail wishlist + Kindle independently
 amazon-kindle-cli wishlist list
 
-# Recommended: browser upload (default) — Amazon's actual UI, Brave CDP
+# HTTP web upload is the default product path
 amazon-kindle-cli kindle send ./book.epub
 amazon-kindle-cli kindle send ./book.epub --execute
-
-# Direct HTTP path — mapped from the live flow; use intentionally
-amazon-kindle-cli kindle send ./book.epub --via web --execute
 ```
 
 ## Wishlist HTTP (default)
 
 `wishlist add --asin … --execute` → `GET /dp/{ASIN}` (CSRF from `#addToWishListForm`) → `POST /hz/wishlist/additemtolist`.
-Browser CDP is `--via browser` fallback only.
+Browser/CDP is auth capture and contract research only, never a product runtime.
 
 ## Auth
 
 | Surface | Env | Notes |
 |---|---|---|
-| Buyer web (wishlist, content) | `AMAZON_COOKIE` | Browser session. Chrome ABE blocks silent DB decrypt — use Brave CDP debug profile or Cookie-Editor import |
+| Buyer web (wishlist, content, Send-to-Kindle web) | `AMAZON_COOKIE` | Persisted in `~/.amazon/auth.sh`; the CLI auto-loads it from a cold shell |
 | Send to Kindle | `KINDLE_EMAIL` + `SMTP_*` | No cookie required. Approve sender in Amazon Personal Document Settings |
 
 ```bash
 amazon-kindle-cli auth import --file cookies.json
 amazon-kindle-cli auth status
+amazon-kindle-cli auth verify
 ```
 
 Dedicated debug browser (already set up on mothership):
@@ -82,10 +79,10 @@ login script: %LOCALAPPDATA%\amazon-kindle-debug-profile\brave_amazon_login.py
 
 ```text
 doctor
-auth status | import --file
+auth status | verify [--list-id] | import --file
 wishlist list
 wishlist add --asin | --title [--execute]
-kindle send <files...> [--via web|browser|email] [--execute]
+kindle send <files...> [--via web|email] [--execute]
 kindle recent
 parity [--user] [--shelf]
 sync goodreads-plan [--direction both]
@@ -100,6 +97,7 @@ content devices
 |---|---|
 | `amazon_kindle_doctor` | read |
 | `amazon_kindle_auth_status` | read |
+| `amazon_kindle_auth_verify` | read |
 | `amazon_kindle_auth_import` | write-safe |
 | `amazon_kindle_wishlist_list` | read |
 | `amazon_kindle_wishlist_add` | write-mutate (browser + execute gate) |
