@@ -29,5 +29,28 @@ class CookieScopingTests(unittest.TestCase):
         self.assertEqual([c["name"] for c in cookies], ["session-id", "at-main"])
 
 
+class RecentAuthenticationRoutingTests(unittest.TestCase):
+    def test_normal_refresh_reuses_signed_in_session(self):
+        self.assertTrue(
+            MODULE.should_reuse_signed_in_session(
+                True, goto_signin=False, email=None
+            )
+        )
+
+    def test_goto_signin_forces_recent_authentication(self):
+        self.assertFalse(
+            MODULE.should_reuse_signed_in_session(
+                True, goto_signin=True, email=None
+            )
+        )
+
+    def test_explicit_email_forces_signin_flow(self):
+        self.assertFalse(
+            MODULE.should_reuse_signed_in_session(
+                True, goto_signin=False, email="reader@example.com"
+            )
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -100,6 +100,13 @@ def signed_in(page) -> bool:
         return False
 
 
+def should_reuse_signed_in_session(
+    is_signed_in: bool, *, goto_signin: bool, email: str | None
+) -> bool:
+    """Reuse a signed-in page unless the caller explicitly requests recent auth."""
+    return is_signed_in and not goto_signin and not email
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--email")
@@ -119,7 +126,9 @@ def main() -> int:
             dump_cookies(ctx)
             return 0
 
-        if signed_in(page):
+        if should_reuse_signed_in_session(
+            signed_in(page), goto_signin=args.goto_signin, email=args.email
+        ):
             print("already_signed_in")
             dump_cookies(ctx)
             return 0
