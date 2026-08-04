@@ -36,10 +36,11 @@ Expected: `webSocketDebuggerUrl` JSON. If not, relaunch Brave using the flags:
 ## Amazon login + cookie persistence
 
 ```bash
-python "$LOCALAPPDATA/amazon-kindle-debug-profile/brave_amazon_login.py" \
-  --email coldz3@yahoo.com --password '<interactive secret>'
-# Ask Zayd for OTP; then:
-python .../brave_amazon_login.py --otp 123456
+# Navigate the dedicated profile to sign-in and complete credentials/OTP manually.
+# Never pass account secrets on a command line.
+python "$LOCALAPPDATA/amazon-kindle-debug-profile/brave_amazon_login.py" --goto-signin
+# After interactive sign-in completes, persist origin-scoped cookies only:
+python "$LOCALAPPDATA/amazon-kindle-debug-profile/brave_amazon_login.py" --cookies-only
 ```
 
 The helper writes:
@@ -60,18 +61,13 @@ amazon-kindle-cli kindle recent
 
 `doctor.live.status=200` plus `signedInHint=true` is required before claiming auth is good.
 
-## Send-to-Kindle: two independent routes
+## Send-to-Kindle product route
 
-### 1. Browser route — durability fallback
+### Browser capture — never product transport
 
-`kindle-browser-upload.py` drives the actual Amazon web UI via CDP. This is the default resilience path when Amazon changes an API payload.
+Use CDP only to refresh the origin-scoped buyer session or research a new contract. Do not run browser upload/scroll workflows as a CLI fallback; product runtime stays pure HTTP (or the separately configured SMTP path).
 
-```bash
-python scripts/kindle-browser-upload.py file.epub             # plan
-python scripts/kindle-browser-upload.py file.epub --execute   # live
-```
-
-### 2. HTTP route — discovered live
+### HTTP route — discovered live
 
 | Stage | Request |
 |---|---|

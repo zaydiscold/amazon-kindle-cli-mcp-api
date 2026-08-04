@@ -17,6 +17,8 @@ export interface WishlistListHttpOptions {
   listId?: string;
   /** Max pagination hops (safety). Default 40. */
   maxPages?: number;
+  /** Max items to return (applied client-side). Undefined = no limit. */
+  limit?: number;
   fixture?: string;
 }
 
@@ -94,19 +96,21 @@ export async function executeWishlistListHttp(opts: WishlistListHttpOptions = {}
     const { readFile } = await import("node:fs/promises");
     const html = await readFile(opts.fixture, "utf8");
     const page = parseWishlistHtml(html);
+    const items = opts.limit === undefined ? page.items : page.items.slice(0, opts.limit);
     return {
       listName: page.listName,
       listUrl: opts.fixture,
-      items: page.items,
+      items,
       pagesFetched: 1,
       via: "http",
       sessionMode: "public",
-      truncated: false,
+      truncated: items.length < page.items.length,
     };
   }
 
   const listUrl = resolveListUrl(opts);
   const maxPages = opts.maxPages ?? 40;
+  const limit = opts.limit;
   let withCookie = Boolean(cookieHeader());
   let first = await getHtml(listUrl, withCookie);
   if (withCookie && isSignInRedirect(first)) {
@@ -126,6 +130,11 @@ export async function executeWishlistListHttp(opts: WishlistListHttpOptions = {}
   let truncated = false;
 
   while (next && pagesFetched < maxPages) {
+    // Check limit during pagination
+    if (limit !== undefined && items.length >= limit) {
+      truncated = true;
+      break;
+    }
     let more = await getHtml(next, withCookie);
     if (withCookie && isSignInRedirect(more)) {
       withCookie = false;
@@ -160,6 +169,12 @@ export async function executeWishlistListHttp(opts: WishlistListHttpOptions = {}
     }
   }
   if (next && pagesFetched >= maxPages) truncated = true;
+
+  // Apply client-side limit on final result
+  if (limit !== undefined && limit > 0 && items.length > limit) {
+    items.length = limit;
+    truncated = true;
+  }
 
   return {
     listName,

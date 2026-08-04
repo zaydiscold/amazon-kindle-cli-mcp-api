@@ -205,9 +205,11 @@ export async function executeWebUpload(opts: WebUploadOptions) {
   };
 }
 
-export async function recentDocs() {
+export async function recentDocs(limit?: number) {
   const r = await amazonFetch("https://www.amazon.com/sendtokindle/recent-docs", {
     headers: { accept: "application/json", "x-requested-with": "XMLHttpRequest" },
   });
-  return { status: r.status, docs: await r.json() };
+  const docs = await r.json();
+  if (!Array.isArray(docs) || limit === undefined) return { status: r.status, docs, truncated: false };
+  return { status: r.status, docs: docs.slice(0, limit), truncated: docs.length > limit };
 }

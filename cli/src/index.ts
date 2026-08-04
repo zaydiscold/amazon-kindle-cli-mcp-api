@@ -27,6 +27,13 @@ function loadAuthFile(): void {
 
 loadAuthFile();
 
+function positiveLimit(value: string): number {
+  if (!/^\d+$/.test(value) || Number(value) < 1 || !Number.isSafeInteger(Number(value))) {
+    throw new Error("--limit must be a positive integer");
+  }
+  return Number(value);
+}
+
 const program = new Command();
 program
   .name("amazon-kindle-cli")
@@ -54,6 +61,7 @@ wishlist
   .option("--url <url>", "Wishlist URL")
   .option("--list-id <id>", "Wishlist id (or AMAZON_WISHLIST_ID)")
   .option("--max-pages <n>", "Max pagination hops", "40")
+  .option("--limit <n>", "Maximum items to return", positiveLimit)
   .option("--fixture <path>", "Local HTML fixture")
   .action(async (opts) =>
     printJson(
@@ -62,6 +70,7 @@ wishlist
         listId: opts.listId,
         fixture: opts.fixture,
         maxPages: Number(opts.maxPages) || 40,
+        limit: opts.limit,
       }),
       true,
     ),
@@ -70,8 +79,9 @@ wishlist
   .command("add")
   .description("Add ASIN via POST /hz/wishlist/additemtolist (dry-run default)")
   .option("--asin <asin>")
-  .option("--title <title>", "ignored for HTTP add — resolve ASIN first")
-  .option("--author <author>", "ignored for HTTP add — resolve ASIN first")
+  .option("--title <title>", "Title to resolve to an Amazon ASIN when --asin is omitted")
+  .option("--author <author>", "Optional author to disambiguate title resolution")
+  .option("--list-name <name>", "Resolve a named wishlist when --list-id is omitted")
   .option("--list-id <id>", "Wishlist id (default AMAZON_WISHLIST_ID)")
   .option("--execute", "Actually mutate the list", false)
   .action(async (opts) =>
@@ -80,6 +90,7 @@ wishlist
         asin: opts.asin,
         title: opts.title,
         author: opts.author,
+        listName: opts.listName,
         listId: opts.listId,
         execute: Boolean(opts.execute),
       }),
@@ -115,9 +126,23 @@ kindle
       true,
     );
   });
-kindle.command("recent").description("Recent Send-to-Kindle docs (HTTP)").action(async () => {
-  printJson(await engine.kindleRecent(), true);
-});
+kindle
+  .command("recent")
+  .description("Recent Send-to-Kindle receipts, not the full personal-document inventory")
+  .option("--limit <n>", "Maximum receipts to return", positiveLimit)
+  .action(async (opts) => printJson(await engine.kindleRecent({ limit: opts.limit }), true));
+kindle
+  .command("books")
+  .description("List purchased Kindle Ebook metadata via MYCD AJAX")
+  .option("--limit <n>", "Maximum items to return", positiveLimit)
+  .option("--fixture <path>", "Synthetic JSON/HTML fixture for deterministic parser tests")
+  .action(async (opts) => printJson(await engine.kindleBooks({ limit: opts.limit, fixture: opts.fixture }), true));
+kindle
+  .command("pdocs")
+  .description("List Personal Document metadata via MYCD AJAX; not recent receipts")
+  .option("--limit <n>", "Maximum items to return", positiveLimit)
+  .option("--fixture <path>", "Synthetic JSON/HTML fixture for deterministic parser tests")
+  .action(async (opts) => printJson(await engine.kindlePdocs({ limit: opts.limit, fixture: opts.fixture }), true));
 
 const content = program.command("content").description("Manage Your Content probes");
 content

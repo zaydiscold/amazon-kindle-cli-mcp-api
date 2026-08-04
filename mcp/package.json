@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "description": "MCP server for amazon-kindle-cli engine",
-  "bin": { "amazon-kindle-mcp": "dist/server.js" },
+  "bin": {
+    "amazon-kindle-mcp": "dist/server.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -12,16 +14,18 @@
     "test": "vitest run test"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@zaydiscold/amazon-kindle-cli": "workspace:*",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/node": "^25.9.5",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.10",
-    "@types/node": "^25.9.5"
+    "vitest": "^4.1.10"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "author": "Zayd Khan (@ColdCooks / zaydiscold)",
   "license": "MIT"
 }

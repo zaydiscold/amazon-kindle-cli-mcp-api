@@ -14,7 +14,9 @@
 | add resolved book to Amazon list | `wishlist add --asin … --execute` | yes, HTTP |
 | add to Goodreads | goodreads-cli `shelves add` | yes, execute-gated |
 | put EPUB/PDF on Kindle | `kindle send … --via web\|email --execute` | yes, execute-gated |
-| verify Kindle conversion | `kindle recent` | no |
+| inspect purchased Kindle Ebook inventory | `kindle books [--limit N]` | no — MYCD ownership metadata, not wishlist state |
+| inspect Personal Document inventory | `kindle pdocs [--limit N]` | no — MYCD ownership metadata, not document bytes or recent receipts |
+| inspect recent Send-to-Kindle activity | `kindle recent [--limit N]` | no — receipt list only; not a complete Personal Document inventory |
 
 ## HTTP contracts (mapped)
 
@@ -27,6 +29,15 @@
 1. `GET /dp/{ASIN}` → `anti-csrftoken-a2z` from `#addToWishListForm`
 2. `POST /hz/wishlist/additemtolist?ie=UTF8`  
    body: `asin`, `vendorId=website.wishlist.detail.add`, `listType=wishlist`, `isAjax=1`, optional `listId`
+
+### Kindle inventory (MYCD, experimental / fixture-verified only)
+> No authenticated account-backed live verification is claimed for these routes. The HTTP contract and pagination behavior are covered by synthetic fixtures; treat output as experimental until a user explicitly authorizes bounded read-only proof.
+
+1. `GET /hz/mycd/digital-console/contentlist/booksAll/dateDsc/` or `.../pdocs/dateDsc/` → page-scoped `csrfToken`
+2. `POST /hz/mycd/digital-console/ajax` form body: `activity=GetContentOwnershipData`, `clientId=MYCD_WebService`, `csrfToken`, and JSON `activityInput`
+3. `kindle books` requests `booksAll` / `Ebook`; `kindle pdocs` requests `pdocs` / `KindlePDoc`; follow bounded batches until exhausted or `--limit`
+
+Returned metadata excludes CSRF, cookies, presigned/download/action URLs, and private document content. `kindle recent` remains a Send-to-Kindle receipt list, not an inventory substitute. MYCD may separately require a recent Amazon sign-in (`openid.pape.max_auth_age`, observed 3600 seconds); `auth verify` proves retail + Send-to-Kindle only, so refresh persisted auth when MYCD redirects to sign-in.
 
 ### Kindle send (web)
 1. `GET /sendtokindle` → CSRF  

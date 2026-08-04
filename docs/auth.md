@@ -22,6 +22,6 @@ amazon-kindle-cli auth status   # presence and cookie-name metadata only
 amazon-kindle-cli auth verify   # live retail wishlist + Kindle HTTP proof
 ```
 
-`auth status` is not authentication proof. `auth verify` checks both HTTP surfaces and reports them independently. Amazon may enforce `openid.pape.max_auth_age=900` for authenticated wishlist operations; when that retail session is stale, public wishlist reads automatically retry without cookies while writes remain blocked until recent authentication is captured. Inspect `readReady`, `retailWriteReady`, and `kindleAuthenticated` separately.
+`auth status` is not authentication proof. `auth verify` checks retail wishlist and Send-to-Kindle HTTP surfaces and reports them independently; it does not promise that MYCD will accept the same session. MYCD inventory routes can request a separate recent sign-in window (`openid.pape.max_auth_age`; observed at 3600 seconds), so refresh `~/.amazon/auth.sh` if `kindle books` or `kindle pdocs` reports a sign-in redirect. Amazon may also enforce `openid.pape.max_auth_age=900` for authenticated wishlist operations; when that retail session is stale, public wishlist reads automatically retry without cookies while writes remain blocked. Inspect `readReady`, `retailWriteReady`, and `kindleAuthenticated` separately.
 
 Never commit auth files.

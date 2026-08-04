@@ -3,6 +3,7 @@ import { executeAmazonGet } from "./client/live.js";
 import { executeKindleSend, planKindleSend, type KindleSendOptions } from "./client/kindleSend.js";
 import { executeWebUpload, planWebUpload, recentDocs } from "./client/kindleWebUpload.js";
 import { executeWishlistHttpAdd, planWishlistHttpAdd } from "./client/wishlistHttp.js";
+import { contentListHttp, type ContentKind } from "./client/kindleContentHttp.js";
 import { wishlistListHttp } from "./client/wishlistListHttp.js";
 import { resolveAmazonSearchHttp, resolveWishlistTargetHttp } from "./client/wishlistResolveHttp.js";
 import { emitLiveMutationWarning } from "./risk.js";
@@ -24,6 +25,8 @@ export const CAPABILITIES = [
   { key: "kindle-send-plan", cli: "kindle send --dry-run", mcpTool: "amazon_kindle_send_plan", readOnly: true, risk: "read" as const },
   { key: "kindle-recent", cli: "kindle recent", mcpTool: "amazon_kindle_recent_docs", readOnly: true, risk: "read" as const },
   { key: "content-devices", cli: "content devices", mcpTool: "amazon_kindle_content_devices", readOnly: true, risk: "read" as const },
+  { key: "kindle-books", cli: "kindle books", mcpTool: "amazon_kindle_books", readOnly: true, risk: "read" as const },
+  { key: "kindle-pdocs", cli: "kindle pdocs", mcpTool: "amazon_kindle_pdocs", readOnly: true, risk: "read" as const },
   { key: "goodreads-sync-plan", cli: "sync goodreads-plan", mcpTool: "amazon_kindle_goodreads_sync_plan", readOnly: true, risk: "read" as const },
   { key: "parity", cli: "parity", mcpTool: "amazon_kindle_parity", readOnly: true, risk: "read" as const },
   { key: "photo-resolve", cli: "books resolve", mcpTool: "amazon_kindle_books_resolve", readOnly: true, risk: "read" as const },
@@ -242,7 +245,7 @@ export async function authImport(opts: { file?: string; header?: string }): Prom
 }
 
 export async function wishlistList(
-  opts: { url?: string; listId?: string; fixture?: string; maxPages?: number } = {},
+  opts: { url?: string; listId?: string; fixture?: string; maxPages?: number; limit?: number } = {},
 ): Promise<CommandEnvelope> {
   try {
     const result = await wishlistListHttp({
@@ -250,6 +253,7 @@ export async function wishlistList(
       listId: opts.listId,
       fixture: opts.fixture,
       maxPages: opts.maxPages,
+      limit: opts.limit,
     });
     return envelope("wishlist-list", "read", result);
   } catch (e) {
@@ -361,8 +365,8 @@ export async function kindleSend(
   return envelope("kindle-send", "write-mutate", { via, ...result });
 }
 
-export async function kindleRecent(): Promise<CommandEnvelope> {
-  const data = await recentDocs();
+export async function kindleRecent(opts: { limit?: number } = {}): Promise<CommandEnvelope> {
+  const data = await recentDocs(opts.limit);
   return envelope("kindle-recent", "read", data);
 }
 
@@ -378,6 +382,21 @@ export async function contentDevices(): Promise<CommandEnvelope> {
     url,
     note: "HTML shape varies; prefer Manage Your Content for Send-to-Kindle address discovery.",
   });
+}
+
+async function kindleContent(kind: ContentKind, opts: { limit?: number; fixture?: string } = {}): Promise<CommandEnvelope> {
+  const data = await contentListHttp({ type: kind, limit: opts.limit, fixture: opts.fixture });
+  return envelope(kind === "books" ? "kindle-books" : "kindle-pdocs", "read", data);
+}
+
+/** Purchased Kindle Ebook inventory; distinct from recent Send-to-Kindle receipts. */
+export async function kindleBooks(opts: { limit?: number; fixture?: string } = {}): Promise<CommandEnvelope> {
+  return kindleContent("books", opts);
+}
+
+/** Personal Document inventory metadata only; never document bytes or download/action URLs. */
+export async function kindlePdocs(opts: { limit?: number; fixture?: string } = {}): Promise<CommandEnvelope> {
+  return kindleContent("pdocs", opts);
 }
 
 export async function goodreadsSyncPlan(

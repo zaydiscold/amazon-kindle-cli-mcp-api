@@ -76,7 +76,8 @@ add(
     url: z.string().optional(),
     listId: z.string().optional(),
     fixture: z.string().optional(),
-    maxPages: z.number().optional(),
+    maxPages: z.number().int().positive().optional(),
+    limit: z.number().int().positive().optional(),
   },
   async (a) =>
     engine.wishlistList({
@@ -84,6 +85,7 @@ add(
       listId: a.listId as string | undefined,
       fixture: a.fixture as string | undefined,
       maxPages: a.maxPages as number | undefined,
+      limit: a.limit as number | undefined,
     }),
 );
 add(
@@ -140,8 +142,36 @@ add(
     }),
   false,
 );
-add("amazon_kindle_recent_docs", {}, async () => engine.kindleRecent());
+add(
+  "amazon_kindle_recent_docs",
+  { limit: z.number().int().positive().optional() },
+  async (a) => engine.kindleRecent({ limit: a.limit as number | undefined }),
+);
 add("amazon_kindle_content_devices", {}, async () => engine.contentDevices());
+add(
+  "amazon_kindle_books",
+  {
+    limit: z.number().int().positive().optional(),
+    fixture: z.string().optional(),
+  },
+  async (a) =>
+    engine.kindleBooks({
+      limit: a.limit as number | undefined,
+      fixture: a.fixture as string | undefined,
+    }),
+);
+add(
+  "amazon_kindle_pdocs",
+  {
+    limit: z.number().int().positive().optional(),
+    fixture: z.string().optional(),
+  },
+  async (a) =>
+    engine.kindlePdocs({
+      limit: a.limit as number | undefined,
+      fixture: a.fixture as string | undefined,
+    }),
+);
 add(
   "amazon_kindle_goodreads_sync_plan",
   {
