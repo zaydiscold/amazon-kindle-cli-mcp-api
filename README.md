@@ -1,78 +1,40 @@
 # amazon-kindle-cli
 
-**HTTP-first** Kindle + Amazon list CLI/MCP. Unofficial. One engine, CLI↔MCP parity, dry-run by default.
+Unofficial **HTTP-first** Amazon/Kindle CLI and optional MCP server. Product reads/writes use scriptable HTTP; browser/CDP is only for session capture and contract research. One shared engine projects to CLI and MCP. Mutations remain `--execute` gated.
 
-**Product paths are scriptable requests only.** Browser/CDP is for cookie capture + contract mapping — never scroll/click runtime.
+## Read surfaces
 
-| Flow | HTTP |
-|---|---|
-| wishlist list | `GET /hz/wishlist/ls/{id}` + `GET /hz/wishlist/slv/items?paginationToken=` |
-| wishlist add | `GET /dp/{ASIN}` CSRF → `POST /hz/wishlist/additemtolist?ie=UTF8` |
-| kindle send | `init → PUT → send-v2 → recent-docs` |
-| kindle recent | `GET /sendtokindle/recent-docs` |
+| Need | Command | What it is / is not |
+|---|---|---|
+| Reading queue | `wishlist list [--limit N]` | Full HTTP pagination by default; a limit intentionally reports `truncated: true` when more items exist. |
+| Purchased Kindle ebooks | `kindle books [--limit N]` | **Experimental, fixture-verified** Ebook metadata from Manage Your Content (MYCD). Not wishlist state and not Send-to-Kindle receipts. |
+| Personal Documents | `kindle pdocs [--limit N]` | **Experimental, fixture-verified** Personal Document metadata from MYCD. No document bytes, action/download URLs, CSRF, or cookies are emitted. |
+| Recent Send-to-Kindle activity | `kindle recent [--limit N]` | Recent STK receipts only; this is not the complete Personal Document inventory. |
 
-Sibling Goodreads parity: [goodreads-cli-mcp-api](https://github.com/zaydiscold/goodreads-cli-mcp-api).
+> **MYCD status — experimental / fixture-verified only.** `kindle books` and `kindle pdocs` have deterministic synthetic-fixture coverage, but have not been independently verified against an authenticated live Amazon account. Do not treat their output or pagination behavior as live-proven.
 
-
-# amazon-kindle-cli
-
-**Kindle-first** Amazon CLI + MCP. Unofficial. One engine, CLI↔MCP parity, dry-run by default.
-
-Bookstore photo → wishlist ASIN → Goodreads `to-read`. EPUB on disk → Send to Kindle. Agent-native.
-
-> **Bookstore photos → lists (live).** Snap stacks in a shop, resolve titles/ASINs, then `wishlist add --execute`. With sibling [goodreads-cli-mcp-api](https://github.com/zaydiscold/goodreads-cli-mcp-api) (`shelves add --name to-read`) you get **parity both ways**: Goodreads Want to Read ↔ Amazon wishlist / Kindle surface on the same haul. `parity` + `sync goodreads-plan` are the bridge commands.
-
-**Last shipped update (feature branch):** default Kindle send path is **API web upload** (`--via web`), not browser automation. See PR [#1](https://github.com/zaydiscold/amazon-kindle-cli-mcp-api/pull/1).
-
-## Why this exists
-
-Sibling of [goodreads-cli-mcp-api](https://github.com/zaydiscold/goodreads-cli-mcp-api) and [robinhood-cli-mcp-api](https://github.com/zaydiscold/robinhood-cli-mcp-api).  
-**Not** bolted onto Goodreads — separate cookie surface, orchestrated together for list parity.
-
-Hero paths:
-
-1. **`kindle send`** — EPUB/PDF → your `@kindle.com` address (web upload default; SMTP also available)
-2. **`wishlist list` / `wishlist add`** — buyer session → ASINs/titles; photo-haul adds land here
-3. **`parity` / `sync goodreads-plan`** — dry-run map wishlist ↔ Goodreads `to-read` (execute shelves on the Goodreads CLI)
+The experimental commands load the MYCD shell, extract its page-scoped CSRF token, then POST `/hz/mycd/digital-console/ajax` with `activity=GetContentOwnershipData`, `clientId=MYCD_WebService`, and the observed `activityInput` contract. They return bounded metadata (`asin` where applicable, title, author, acquisition date, document id where applicable, type) plus count/limit metadata.
 
 ## Quick start
 
 ```bash
-pnpm install && pnpm build && pnpm test
+pnpm install
+pnpm build
+amazon-kindle-cli auth verify
+amazon-kindle-cli wishlist list --limit 100
+amazon-kindle-cli kindle books --limit 100
+amazon-kindle-cli kindle pdocs --limit 100
+amazon-kindle-cli kindle recent --limit 25
 
-# Persisted Amazon session auto-loads from ~/.amazon/auth.sh
-amazon-kindle-cli auth verify   # proves retail wishlist + Kindle independently
-amazon-kindle-cli wishlist list
-
-# HTTP web upload is the default product path
-amazon-kindle-cli kindle send ./book.epub
-amazon-kindle-cli kindle send ./book.epub --execute
+# Send-to-Kindle is dry-run by default; execute is explicit.
+amazon-kindle-cli kindle send ./book.epub --via web --execute
 ```
 
-## Wishlist HTTP (default)
-
-`wishlist add --asin … --execute` → `GET /dp/{ASIN}` (CSRF from `#addToWishListForm`) → `POST /hz/wishlist/additemtolist`.
-Browser/CDP is auth capture and contract research only, never a product runtime.
-
-## Auth
-
-| Surface | Env | Notes |
-|---|---|---|
-| Buyer web (wishlist, content, Send-to-Kindle web) | `AMAZON_COOKIE` | Persisted in `~/.amazon/auth.sh`; the CLI auto-loads it from a cold shell |
-| Send to Kindle | `KINDLE_EMAIL` + `SMTP_*` | No cookie required. Approve sender in Amazon Personal Document Settings |
+The CLI auto-loads a persisted buyer session from `~/.amazon/auth.sh`. `auth verify` proves wishlist and Send-to-Kindle surfaces independently; MYCD can additionally require a recent Amazon sign-in (`openid.pape.max_auth_age`), so `kindle books`/`pdocs` may ask for a refresh even when recent receipts work. Import a supported cookie export if needed:
 
 ```bash
 amazon-kindle-cli auth import --file cookies.json
-amazon-kindle-cli auth status
 amazon-kindle-cli auth verify
-```
-
-Dedicated debug browser (already set up on mothership):
-
-```text
-Brave --remote-debugging-port=9333
---user-data-dir=%LOCALAPPDATA%\amazon-kindle-debug-profile
-login script: %LOCALAPPDATA%\amazon-kindle-debug-profile\brave_amazon_login.py
 ```
 
 ## CLI
@@ -80,52 +42,39 @@ login script: %LOCALAPPDATA%\amazon-kindle-debug-profile\brave_amazon_login.py
 ```text
 doctor
 auth status | verify [--list-id] | import --file
-wishlist list
-wishlist add --asin | --title [--execute]
+wishlist list [--url | --list-id] [--max-pages N] [--limit N]
+wishlist add --asin ASIN | --title TITLE [--author AUTHOR] [--list-id ID] [--execute]
 kindle send <files...> [--via web|email] [--execute]
-kindle recent
+kindle books [--limit N]
+kindle pdocs [--limit N]
+kindle recent [--limit N]
+content devices
 parity [--user] [--shelf]
 sync goodreads-plan [--direction both]
 books resolve --title|--text
 add-plan --title|--text
-content devices
 ```
 
 ## MCP tools
 
+`AMAZON_KINDLE_MCP_PROFILE=full|core` chooses the optional tool profile. The core profile includes the read-only Kindle inventory tools.
+
 | Tool | Risk |
 |---|---|
-| `amazon_kindle_doctor` | read |
-| `amazon_kindle_auth_status` | read |
-| `amazon_kindle_auth_verify` | read |
-| `amazon_kindle_auth_import` | write-safe |
 | `amazon_kindle_wishlist_list` | read |
-| `amazon_kindle_wishlist_add` | write-mutate (browser + execute gate) |
-| `amazon_kindle_send_plan` | read |
-| `amazon_kindle_send` | write-mutate (execute gate) |
+| `amazon_kindle_wishlist_add` | write-mutate (`execute` required) |
+| `amazon_kindle_books` | read |
+| `amazon_kindle_pdocs` | read |
 | `amazon_kindle_recent_docs` | read |
-| `amazon_kindle_parity` | read |
-| `amazon_kindle_goodreads_sync_plan` | read |
-| `amazon_kindle_books_resolve` / `amazon_kindle_add_plan` | read |
+| `amazon_kindle_send_plan` / `amazon_kindle_send` | read / write-mutate |
+| `amazon_kindle_auth_status` / `_verify` / `_import` | read / read / write-safe |
+| `amazon_kindle_content_devices`, `_parity`, `_goodreads_sync_plan`, `_books_resolve`, `_add_plan`, `_doctor` | read |
 
-Profiles: `AMAZON_KINDLE_MCP_PROFILE=full|core`
+## HTTP contracts
 
-Bootstrap: `scripts/amazon-kindle-mcp.cmd` / `.sh`
+- **Wishlist list:** `GET /hz/wishlist/ls/{id}` then `GET /hz/wishlist/slv/items?...paginationToken=...` until exhausted.
+- **Wishlist add:** product GET for `#addToWishListForm` CSRF, then `POST /hz/wishlist/additemtolist`.
+- **MYCD inventory (experimental / fixture-verified):** shell GET plus CSRF-bearing `POST /hz/mycd/digital-console/ajax` as described above; no authenticated live proof is claimed.
+- **Kindle send:** `GET /sendtokindle` → init → presigned PUT → send-v2; verify separately with `kindle recent`.
 
-## Invariants
-
-1. One engine — logic in `cli/src/engine.ts`
-2. Reads free, writes gated (`--execute`)
-3. Kindle-first
-4. Never print secrets
-5. Redaction-first wishlist output (ASIN/title/author only)
-
-## License
-
-MIT
-
-### Haul + sync tips
-- Prefer one ASIN per work (avoid study-guide / wrong-title search hits).
-- After bulk adds, open the list sorted by **date-added** and scroll — Amazon lazy-loads; a short first paint is not the full list.
-- Bidirectional parity: `parity` / `sync goodreads-plan` here + Goodreads `shelves add/remove`. Sibling: https://github.com/zaydiscold/goodreads-cli-mcp-api
-- Product direction: simple web app — OAuth/session login for Amazon + Goodreads, drag bookstore photos, dual-list add + sync.
+See `docs/canonical-procedures.md` for exact operating recipes and `SKILL.md` for agent routing.

@@ -48,4 +48,20 @@ describe("wishlist parser", () => {
     expect(new Headers(requests[0].headers).has("cookie")).toBe(true);
     expect(new Headers(requests[1].headers).has("cookie")).toBe(false);
   });
+
+  it("applies --limit without claiming a full paginated inventory", async () => {
+    delete process.env.AMAZON_COOKIE;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          '<div data-asin="B00LIMIT001"><a href="/dp/B00LIMIT001">One</a></div><div data-asin="B00LIMIT002"><a href="/dp/B00LIMIT002">Two</a></div>',
+          { status: 200 },
+        ),
+      ),
+    );
+    const result = await executeWishlistListHttp({ listId: "TESTLIST", maxPages: 1, limit: 1 });
+    expect(result.items).toHaveLength(1);
+    expect(result.truncated).toBe(true);
+  });
 });

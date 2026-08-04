@@ -5,6 +5,20 @@ description: "Use when sending files to Kindle, reconciling Amazon books with Go
 
 # Amazon / Kindle Book Mesh
 
+## Zero-thought intent router
+
+| User says | Use |
+|---|---|
+| Put this EPUB/PDF in my Kindle app/library | `amazon-kindle-cli kindle send FILE --via web --execute`, then `kindle recent` |
+| Show my purchased Kindle ebooks | `amazon-kindle-cli kindle books --limit N` — **experimental, fixture-verified** MYCD Ebook inventory; not a wishlist or upload receipt |
+| Show my Personal Documents | `amazon-kindle-cli kindle pdocs --limit N` — **experimental, fixture-verified** MYCD PDoc metadata inventory; not `kindle recent` |
+| Show recent Send-to-Kindle activity | `amazon-kindle-cli kindle recent --limit N` — receipts only, not the whole Personal Document library |
+| Add this title to my Amazon list | resolve title → ASIN → `wishlist add --asin ASIN --execute`, then full paginated `wishlist list` verify |
+| Add this title to Goodreads / want-to-read | resolve numeric Goodreads ID → `goodreads-cli shelves add --book-id ID --name to-read --execute` |
+| Add this title to my Kindle library, but no legal file exists | Do not fake ownership. Use wishlist/to-read or request explicit purchase approval. |
+
+Use CLI first. Amazon auth auto-loads in a cold shell. Browser/CDP is only for auth recovery or new contract research. HTTP 200 alone is not proof; always verify the resulting receipt/list/shelf state.
+
 ## Trigger phrases
 - send this EPUB/PDF to Kindle
 - add this book to Amazon / Goodreads
@@ -48,9 +62,21 @@ amazon-kindle-cli kindle send book.epub --via web --execute
 # SMTP fallback
 amazon-kindle-cli kindle send book.epub --via email --execute
 
-# Amazon converts async. Verify receipt:
-amazon-kindle-cli kindle recent
+# Amazon converts async. This is a recent-receipts view, not full PDoc inventory:
+amazon-kindle-cli kindle recent --limit 25
 ```
+
+## Kindle inventory reads
+
+```bash
+# Purchased Kindle Ebook ownership metadata (MYCD); not the wishlist.
+amazon-kindle-cli kindle books --limit 100
+
+# Personal Document ownership metadata (MYCD); not just recent STK receipts.
+amazon-kindle-cli kindle pdocs --limit 100
+```
+
+**Status: experimental / fixture-verified only.** Both commands use the observed MYCD shell-CSRF → `POST /hz/mycd/digital-console/ajax` (`GetContentOwnershipData`, `MYCD_WebService`) contract and have deterministic synthetic-fixture coverage; they have not been independently authenticated-live-verified. Output is metadata only: it never includes cookies, CSRF, download/action URLs, or private document bytes. `--limit` is an intentional bounded view; inspect `truncated` before treating it as complete.
 
 ## Photo / title intake
 

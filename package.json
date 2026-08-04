@@ -3,6 +3,11 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.12.1",
+  "pnpm": {
+    "overrides": {
+      "brace-expansion": "5.0.9"
+    }
+  },
   "scripts": {
     "build": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli build && corepack pnpm --filter @zaydiscold/amazon-kindle-mcp build",
     "test": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli test && corepack pnpm --filter @zaydiscold/amazon-kindle-mcp test && node scripts/test-python.mjs",
@@ -15,8 +20,8 @@
   },
   "devDependencies": {
     "@types/node": "^25.9.5",
-    "@typescript-eslint/eslint-plugin": "^8.64.0",
-    "@typescript-eslint/parser": "^8.64.0",
+    "@typescript-eslint/eslint-plugin": "^8.66.0",
+    "@typescript-eslint/parser": "^8.66.0",
     "eslint": "^10.7.0",
     "prettier": "^3.9.5",
     "typescript": "^5.9.3",
