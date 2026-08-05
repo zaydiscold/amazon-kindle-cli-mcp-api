@@ -78,3 +78,7 @@ add-plan --title|--text
 - **Kindle send:** `GET /sendtokindle` → init → presigned PUT → send-v2; verify separately with `kindle recent`.
 
 See `docs/canonical-procedures.md` for exact operating recipes and `SKILL.md` for agent routing.
+
+## Related tools
+
+- **[free-book-download](https://github.com/zaydiscold/agent-skills/tree/main/skills/research/free-book-download)** — Agent skill for downloading free books from OceanofPDF, Libgen, and Z-Library via DuckDuckGo-first search. Pairs with the bookstore-haul → wishlist → Kindle pipeline.
