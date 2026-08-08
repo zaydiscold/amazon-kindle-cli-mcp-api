@@ -13,7 +13,11 @@ export function envelope<T>(
   capability: string,
   risk: Risk,
   data: T,
-  extra: { warnings?: string[]; meta?: Record<string, unknown>; ok?: boolean } = {},
+  extra: {
+    warnings?: string[];
+    meta?: Record<string, unknown>;
+    ok?: boolean;
+  } = {},
 ): CommandEnvelope<T> {
   return {
     ok: extra.ok ?? true,
@@ -26,5 +30,7 @@ export function envelope<T>(
 }
 
 export function printJson(value: unknown, pretty = false): void {
-  process.stdout.write(JSON.stringify(value, null, pretty ? 2 : undefined) + "\n");
+  process.stdout.write(
+    JSON.stringify(value, null, pretty ? 2 : undefined) + "\n",
+  );
 }

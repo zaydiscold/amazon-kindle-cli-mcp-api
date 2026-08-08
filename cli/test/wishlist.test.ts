@@ -32,7 +32,10 @@ describe("wishlist parser", () => {
         if (requests.length === 1) {
           return new Response("", {
             status: 302,
-            headers: { location: "https://www.amazon.com/ap/signin?openid.pape.max_auth_age=900" },
+            headers: {
+              location:
+                "https://www.amazon.com/ap/signin?openid.pape.max_auth_age=900",
+            },
           });
         }
         return new Response(
@@ -42,7 +45,10 @@ describe("wishlist parser", () => {
       }),
     );
 
-    const result = await executeWishlistListHttp({ listId: "TESTLIST", maxPages: 1 });
+    const result = await executeWishlistListHttp({
+      listId: "TESTLIST",
+      maxPages: 1,
+    });
     expect(result.items[0]?.asin).toBe("B00TESTTESTB");
     expect(result.sessionMode).toBe("public");
     expect(new Headers(requests[0].headers).has("cookie")).toBe(true);
@@ -53,14 +59,19 @@ describe("wishlist parser", () => {
     delete process.env.AMAZON_COOKIE;
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        new Response(
-          '<div data-asin="B00LIMIT001"><a href="/dp/B00LIMIT001">One</a></div><div data-asin="B00LIMIT002"><a href="/dp/B00LIMIT002">Two</a></div>',
-          { status: 200 },
-        ),
+      vi.fn(
+        async () =>
+          new Response(
+            '<div data-asin="B00LIMIT001"><a href="/dp/B00LIMIT001">One</a></div><div data-asin="B00LIMIT002"><a href="/dp/B00LIMIT002">Two</a></div>',
+            { status: 200 },
+          ),
       ),
     );
-    const result = await executeWishlistListHttp({ listId: "TESTLIST", maxPages: 1, limit: 1 });
+    const result = await executeWishlistListHttp({
+      listId: "TESTLIST",
+      maxPages: 1,
+      limit: 1,
+    });
     expect(result.items).toHaveLength(1);
     expect(result.truncated).toBe(true);
   });

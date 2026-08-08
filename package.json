@@ -14,6 +14,7 @@
     "typecheck": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli typecheck && corepack pnpm --filter @zaydiscold/amazon-kindle-cli build && corepack pnpm --filter @zaydiscold/amazon-kindle-mcp typecheck",
     "lint": "eslint cli/src cli/test mcp/src mcp/test",
     "format": "prettier --write cli/src cli/test mcp/src mcp/test scripts",
+    "format:check": "prettier --check cli/src cli/test mcp/src mcp/test scripts",
     "cli": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli cli",
     "mcp": "scripts/amazon-kindle-mcp.sh",
     "doctor": "node scripts/doctor.mjs"

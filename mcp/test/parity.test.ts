@@ -10,8 +10,14 @@ describe("CLI ↔ MCP capability parity", () => {
   it("every engine capability is exposed as a full MCP tool", () => {
     const full = new Set<string>(FULL_TOOL_NAMES);
     for (const capability of CAPABILITIES) {
-      expect(full.has(capability.mcpTool), `${capability.key} missing MCP tool ${capability.mcpTool}`).toBe(true);
-      expect(capability.cli, `${capability.key} must have a CLI command`).not.toBeNull();
+      expect(
+        full.has(capability.mcpTool),
+        `${capability.key} missing MCP tool ${capability.mcpTool}`,
+      ).toBe(true);
+      expect(
+        capability.cli,
+        `${capability.key} must have a CLI command`,
+      ).not.toBeNull();
     }
   });
 

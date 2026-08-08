@@ -14,7 +14,10 @@ export interface WishlistPage {
   showMoreUrl: string | null;
 }
 
-function absUrl(href: string | null | undefined, baseUrl: string): string | null {
+function absUrl(
+  href: string | null | undefined,
+  baseUrl: string,
+): string | null {
   if (!href) return null;
   try {
     return new URL(href.replace(/&amp;/g, "&"), baseUrl).toString();
@@ -29,7 +32,10 @@ function asinFromHref(href: string | null): string | null {
   return m?.[1] ?? null;
 }
 
-export function parseWishlistHtml(html: string, baseUrl = "https://www.amazon.com"): WishlistPage {
+export function parseWishlistHtml(
+  html: string,
+  baseUrl = "https://www.amazon.com",
+): WishlistPage {
   const $ = cheerio.load(html);
   const listName =
     $("#profile-list-name").text().trim() ||
@@ -46,7 +52,10 @@ export function parseWishlistHtml(html: string, baseUrl = "https://www.amazon.co
       const link = $(el);
       const href = link.attr("href") || null;
       const asin = asinFromHref(href);
-      let title = link.clone().children().remove().end().text().trim() || link.text().trim() || null;
+      let title =
+        link.clone().children().remove().end().text().trim() ||
+        link.text().trim() ||
+        null;
       if (title) title = title.replace(/\s+/g, " ").trim();
       const id = (link.attr("id") || "").replace(/^itemName_/, "");
       const root = id
@@ -74,7 +83,9 @@ export function parseWishlistHtml(html: string, baseUrl = "https://www.amazon.co
     }
   } else {
     // Fallback: data-asin / data-itemid cards
-    const roots = $("[data-itemid], li[data-id], div[id^='item_'], [data-asin]").toArray();
+    const roots = $(
+      "[data-itemid], li[data-id], div[id^='item_'], [data-asin]",
+    ).toArray();
     for (const el of roots) {
       const root = $(el);
       const nameEl = root.find('[id^="itemName_"]').first();
@@ -85,7 +96,10 @@ export function parseWishlistHtml(html: string, baseUrl = "https://www.amazon.co
       let asin: string | null = root.attr("data-asin") || asinFromHref(href);
       let title: string | null = null;
       if (nameEl.length) {
-        title = nameEl.clone().children().remove().end().text().trim() || nameEl.text().trim() || null;
+        title =
+          nameEl.clone().children().remove().end().text().trim() ||
+          nameEl.text().trim() ||
+          null;
       } else if (link.length) {
         title = link.clone().children().remove().end().text().trim() || null;
       }
@@ -135,7 +149,8 @@ export function parseWishlistHtml(html: string, baseUrl = "https://www.amazon.co
     html.match(/href="(\/hz\/wishlist\/slv\/items\?[^"]+)"/i);
   if (sm?.[1]) {
     showMore = sm[1].replace(/&amp;/g, "&").replace(/\\\//g, "/");
-    if (showMore.startsWith("/")) showMore = `https://www.amazon.com${showMore}`;
+    if (showMore.startsWith("/"))
+      showMore = `https://www.amazon.com${showMore}`;
   }
 
   return {

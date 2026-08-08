@@ -39,27 +39,42 @@ function env(name: string): string | undefined {
   return v && v.trim() ? v.trim() : undefined;
 }
 
-export async function planKindleSend(opts: KindleSendOptions): Promise<KindleSendPlan> {
-  const kindleEmail = opts.kindleEmail || env("KINDLE_EMAIL") || env("KINDLE_SEND_ADDRESS") || null;
+export async function planKindleSend(
+  opts: KindleSendOptions,
+): Promise<KindleSendPlan> {
+  const kindleEmail =
+    opts.kindleEmail ||
+    env("KINDLE_EMAIL") ||
+    env("KINDLE_SEND_ADDRESS") ||
+    null;
   const smtpConfigured = Boolean(
-    env("SMTP_HOST") && env("SMTP_USER") && (env("SMTP_PASS") || env("SMTP_PASSWORD")),
+    env("SMTP_HOST") &&
+    env("SMTP_USER") &&
+    (env("SMTP_PASS") || env("SMTP_PASSWORD")),
   );
   const blockers: string[] = [];
-  if (!kindleEmail) blockers.push("KINDLE_EMAIL / --kindle-email required (you_xxx@kindle.com)");
-  if (!smtpConfigured) blockers.push("SMTP_HOST + SMTP_USER + SMTP_PASS required");
+  if (!kindleEmail)
+    blockers.push(
+      "KINDLE_EMAIL / --kindle-email required (you_xxx@kindle.com)",
+    );
+  if (!smtpConfigured)
+    blockers.push("SMTP_HOST + SMTP_USER + SMTP_PASS required");
   if (!opts.files.length) blockers.push("at least one file path required");
-  if (opts.files.length > 25) blockers.push("Amazon Send-to-Kindle email max is 25 attachments");
+  if (opts.files.length > 25)
+    blockers.push("Amazon Send-to-Kindle email max is 25 attachments");
 
   const files: KindleSendPlan["files"] = [];
   let total = 0;
   for (const p of opts.files) {
     const st = await stat(p);
     const ext = p.toLowerCase().slice(p.lastIndexOf("."));
-    if (!SUPPORTED.has(ext)) blockers.push(`unsupported extension: ${ext} (${p})`);
+    if (!SUPPORTED.has(ext))
+      blockers.push(`unsupported extension: ${ext} (${p})`);
     total += st.size;
     files.push({ path: p, bytes: st.size, ext });
   }
-  if (total > 50 * 1024 * 1024) blockers.push(`combined size ${total} exceeds ~50MB email limit`);
+  if (total > 50 * 1024 * 1024)
+    blockers.push(`combined size ${total} exceeds ~50MB email limit`);
 
   const dryRun = opts.dryRun || !opts.execute || blockers.length > 0;
   return {

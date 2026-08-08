@@ -37,7 +37,10 @@ describe("auth verify", () => {
     const result = await authVerify(
       { listId: "TESTLIST" },
       {
-        wishlist: async () => ({ items: [{ asin: "B000000001" }], pagesFetched: 1 }),
+        wishlist: async () => ({
+          items: [{ asin: "B000000001" }],
+          pagesFetched: 1,
+        }),
         kindle: async () => ({ status: 200, docs: { items: [] } }),
       },
     );

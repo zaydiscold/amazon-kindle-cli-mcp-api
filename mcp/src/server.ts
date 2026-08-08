@@ -3,14 +3,21 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import * as engine from "@zaydiscold/amazon-kindle-cli/engine";
-import { CORE_TOOL_NAMES, FULL_TOOL_NAMES, parseMcpProfile } from "./profile.js";
+import {
+  CORE_TOOL_NAMES,
+  FULL_TOOL_NAMES,
+  parseMcpProfile,
+} from "./profile.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 function loadAuth(): void {
   const p =
     process.env.AMAZON_AUTH_FILE ||
-    resolve(process.env.USERPROFILE || process.env.HOME || "", ".amazon/auth.sh");
+    resolve(
+      process.env.USERPROFILE || process.env.HOME || "",
+      ".amazon/auth.sh",
+    );
   try {
     const text = readFileSync(p, "utf8");
     for (const line of text.split(/\r?\n/)) {
@@ -59,10 +66,8 @@ function add(
 
 add("amazon_kindle_doctor", {}, async () => engine.doctor());
 add("amazon_kindle_auth_status", {}, async () => engine.authStatus());
-add(
-  "amazon_kindle_auth_verify",
-  { listId: z.string().optional() },
-  async (a) => engine.authVerify({ listId: a.listId as string | undefined }),
+add("amazon_kindle_auth_verify", { listId: z.string().optional() }, async (a) =>
+  engine.authVerify({ listId: a.listId as string | undefined }),
 );
 add(
   "amazon_kindle_auth_import",
@@ -179,7 +184,9 @@ add(
     listId: z.string().optional(),
     fixture: z.string().optional(),
     userId: z.string().optional(),
-    direction: z.enum(["amazon-to-goodreads", "goodreads-to-amazon", "both"]).optional(),
+    direction: z
+      .enum(["amazon-to-goodreads", "goodreads-to-amazon", "both"])
+      .optional(),
   },
   async (a) =>
     engine.goodreadsSyncPlan({
@@ -187,7 +194,8 @@ add(
       listId: a.listId as string | undefined,
       fixture: a.fixture as string | undefined,
       userId: a.userId as string | undefined,
-      direction: a.direction as "amazon-to-goodreads" | "goodreads-to-amazon" | "both" | undefined,
+      direction: a.direction as
+        "amazon-to-goodreads" | "goodreads-to-amazon" | "both" | undefined,
     }),
 );
 add(

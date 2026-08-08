@@ -52,9 +52,15 @@ export function extractShowMoreUrl(html: string): string | null {
   return null;
 }
 
-async function getHtml(url: string, withCookie: boolean): Promise<{ status: number; text: string; location: string | null }> {
+async function getHtml(
+  url: string,
+  withCookie: boolean,
+): Promise<{ status: number; text: string; location: string | null }> {
   const cookie = withCookie ? cookieHeader() || "" : "";
-  const headers = amazonNavigateHeaders(cookie, "https://www.amazon.com/hz/wishlist/ls");
+  const headers = amazonNavigateHeaders(
+    cookie,
+    "https://www.amazon.com/hz/wishlist/ls",
+  );
   if (!cookie) delete headers.cookie;
   const res = await fetch(url, {
     method: "GET",
@@ -66,12 +72,21 @@ async function getHtml(url: string, withCookie: boolean): Promise<{ status: numb
   return { status: res.status, text, location: res.headers.get("location") };
 }
 
-function isSignInRedirect(result: { status: number; location: string | null }): boolean {
-  return result.status >= 300 && result.status < 400 && /\/ap\/signin/i.test(result.location || "");
+function isSignInRedirect(result: {
+  status: number;
+  location: string | null;
+}): boolean {
+  return (
+    result.status >= 300 &&
+    result.status < 400 &&
+    /\/ap\/signin/i.test(result.location || "")
+  );
 }
 
 function mergeItems(into: WishlistItem[], page: WishlistItem[]): number {
-  const seen = new Set(into.map((i) => i.asin || i.title || "").filter(Boolean));
+  const seen = new Set(
+    into.map((i) => i.asin || i.title || "").filter(Boolean),
+  );
   let added = 0;
   for (const it of page) {
     const k = it.asin || it.title || "";
@@ -83,7 +98,9 @@ function mergeItems(into: WishlistItem[], page: WishlistItem[]): number {
   return added;
 }
 
-export async function executeWishlistListHttp(opts: WishlistListHttpOptions = {}): Promise<{
+export async function executeWishlistListHttp(
+  opts: WishlistListHttpOptions = {},
+): Promise<{
   listName: string | null;
   listUrl: string;
   items: WishlistItem[];
@@ -96,7 +113,8 @@ export async function executeWishlistListHttp(opts: WishlistListHttpOptions = {}
     const { readFile } = await import("node:fs/promises");
     const html = await readFile(opts.fixture, "utf8");
     const page = parseWishlistHtml(html);
-    const items = opts.limit === undefined ? page.items : page.items.slice(0, opts.limit);
+    const items =
+      opts.limit === undefined ? page.items : page.items.slice(0, opts.limit);
     return {
       listName: page.listName,
       listUrl: opts.fixture,
@@ -118,14 +136,17 @@ export async function executeWishlistListHttp(opts: WishlistListHttpOptions = {}
     first = await getHtml(listUrl, false);
   }
   if (first.status >= 300 && first.status < 400) {
-    throw new Error(`wishlist list redirect ${first.status}${first.location ? ` to ${first.location}` : ""}`);
+    throw new Error(
+      `wishlist list redirect ${first.status}${first.location ? ` to ${first.location}` : ""}`,
+    );
   }
 
   const items: WishlistItem[] = [];
   let page = parseWishlistHtml(first.text, listUrl);
   mergeItems(items, page.items);
   let listName = page.listName;
-  let next = page.showMoreUrl || extractShowMoreUrl(first.text) || page.nextPageUrl;
+  let next =
+    page.showMoreUrl || extractShowMoreUrl(first.text) || page.nextPageUrl;
   let pagesFetched = 1;
   let truncated = false;
 
@@ -141,12 +162,18 @@ export async function executeWishlistListHttp(opts: WishlistListHttpOptions = {}
       more = await getHtml(next, false);
     }
     if (more.status >= 300 && more.status < 400) {
-      throw new Error(`wishlist pagination redirect ${more.status}${more.location ? ` to ${more.location}` : ""}`);
+      throw new Error(
+        `wishlist pagination redirect ${more.status}${more.location ? ` to ${more.location}` : ""}`,
+      );
     }
     // slv/items may return HTML fragment or JSON-wrapped HTML
     let html = more.text;
     try {
-      const j = JSON.parse(more.text) as { html?: string; itemsHtml?: string; showMoreUrl?: string };
+      const j = JSON.parse(more.text) as {
+        html?: string;
+        itemsHtml?: string;
+        showMoreUrl?: string;
+      };
       if (j.html || j.itemsHtml) html = String(j.html || j.itemsHtml);
       if (j.showMoreUrl) {
         next = j.showMoreUrl.startsWith("http")
