@@ -17,6 +17,7 @@
     "format:check": "prettier --check cli/src cli/test mcp/src mcp/test scripts",
     "cli": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli cli",
     "mcp": "scripts/amazon-kindle-mcp.sh",
+    "regression:recent": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli exec vitest run test/authVerify.test.ts test/wishlist.test.ts && node scripts/test-python.mjs && corepack pnpm format:check",
     "doctor": "node scripts/doctor.mjs"
   },
   "devDependencies": {

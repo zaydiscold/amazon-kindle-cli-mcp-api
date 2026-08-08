@@ -27,3 +27,23 @@ pnpm install && pnpm build && pnpm test
 
 ## Goodreads bridge
 `sync goodreads-plan` only. Execute shelf adds via goodreads-cli MCP with separate cookie.
+
+## Recent regression guards
+
+### Retail auth is not Kindle auth
+
+A readable Kindle/content session does not prove retail wishlist writes are authorized. Amazon may serve Kindle content while retail writes redirect through `openid.pape.max_auth_age`, sign-in, or reauthentication.
+
+- Keep authenticated read state/`readReady` separate from `retailWriteReady`.
+- Never infer retail-write readiness from cookie presence, Kindle status, or HTTP 200.
+- Wishlist listing must return parsed private items. Wishlist-add verification must be a dry-run with the intended route and `submitted=false` unless a live write was expressly approved.
+- Retail wishlist calls need retail-scoped cookies, browser-compatible headers, and the route-specific wishlist CSRF token; generic anti-CSRF values are not substitutes.
+- `format:check` is the canonical non-mutating formatting gate. Do not use broad formatting changes to conceal behavior changes.
+
+Focused, non-duplicative gate after auth verification, cookie harvesting, wishlist list/add, CSRF, or adapter changes:
+
+```bash
+pnpm regression:recent
+```
+
+This reuses the existing auth-verification, wishlist, Python-helper, and formatting tests. Before release, also run full build/typecheck/lint/test and the external live ship gate. Signed-out HTML, redirect loops, WAF pages, and opaque `fetch failed` results are failures.
