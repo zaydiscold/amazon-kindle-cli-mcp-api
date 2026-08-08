@@ -1,36 +1,152 @@
 import { envelope, type CommandEnvelope } from "./lib.js";
 import { executeAmazonGet } from "./client/live.js";
-import { executeKindleSend, planKindleSend, type KindleSendOptions } from "./client/kindleSend.js";
-import { executeWebUpload, planWebUpload, recentDocs } from "./client/kindleWebUpload.js";
-import { executeWishlistHttpAdd, planWishlistHttpAdd } from "./client/wishlistHttp.js";
-import { contentListHttp, type ContentKind } from "./client/kindleContentHttp.js";
+import {
+  executeKindleSend,
+  planKindleSend,
+  type KindleSendOptions,
+} from "./client/kindleSend.js";
+import {
+  executeWebUpload,
+  planWebUpload,
+  recentDocs,
+} from "./client/kindleWebUpload.js";
+import {
+  executeWishlistHttpAdd,
+  planWishlistHttpAdd,
+} from "./client/wishlistHttp.js";
+import {
+  contentListHttp,
+  type ContentKind,
+} from "./client/kindleContentHttp.js";
 import { wishlistListHttp } from "./client/wishlistListHttp.js";
-import { resolveAmazonSearchHttp, resolveWishlistTargetHttp } from "./client/wishlistResolveHttp.js";
+import {
+  resolveAmazonSearchHttp,
+  resolveWishlistTargetHttp,
+} from "./client/wishlistResolveHttp.js";
 import { emitLiveMutationWarning } from "./risk.js";
 import { bookKey, computeParity, type BookRef } from "./parity.js";
-import { fetchGoodreadsShelfRss, searchGoodreadsBookId } from "./client/goodreadsBridge.js";
+import {
+  fetchGoodreadsShelfRss,
+  searchGoodreadsBookId,
+} from "./client/goodreadsBridge.js";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
 export const CAPABILITIES = [
-  { key: "doctor", cli: "doctor", mcpTool: "amazon_kindle_doctor", readOnly: true, risk: "read" as const },
-  { key: "auth-status", cli: "auth status", mcpTool: "amazon_kindle_auth_status", readOnly: true, risk: "read" as const },
-  { key: "auth-verify", cli: "auth verify", mcpTool: "amazon_kindle_auth_verify", readOnly: true, risk: "read" as const },
-  { key: "auth-import", cli: "auth import", mcpTool: "amazon_kindle_auth_import", readOnly: false, risk: "write-safe" as const },
-  { key: "wishlist-list", cli: "wishlist list", mcpTool: "amazon_kindle_wishlist_list", readOnly: true, risk: "read" as const },
-  { key: "wishlist-add", cli: "wishlist add", mcpTool: "amazon_kindle_wishlist_add", readOnly: false, risk: "write-mutate" as const },
-  { key: "kindle-send", cli: "kindle send", mcpTool: "amazon_kindle_send", readOnly: false, risk: "write-mutate" as const },
-  { key: "kindle-send-plan", cli: "kindle send --dry-run", mcpTool: "amazon_kindle_send_plan", readOnly: true, risk: "read" as const },
-  { key: "kindle-recent", cli: "kindle recent", mcpTool: "amazon_kindle_recent_docs", readOnly: true, risk: "read" as const },
-  { key: "content-devices", cli: "content devices", mcpTool: "amazon_kindle_content_devices", readOnly: true, risk: "read" as const },
-  { key: "kindle-books", cli: "kindle books", mcpTool: "amazon_kindle_books", readOnly: true, risk: "read" as const },
-  { key: "kindle-pdocs", cli: "kindle pdocs", mcpTool: "amazon_kindle_pdocs", readOnly: true, risk: "read" as const },
-  { key: "goodreads-sync-plan", cli: "sync goodreads-plan", mcpTool: "amazon_kindle_goodreads_sync_plan", readOnly: true, risk: "read" as const },
-  { key: "parity", cli: "parity", mcpTool: "amazon_kindle_parity", readOnly: true, risk: "read" as const },
-  { key: "photo-resolve", cli: "books resolve", mcpTool: "amazon_kindle_books_resolve", readOnly: true, risk: "read" as const },
-  { key: "add-plan", cli: "add-plan", mcpTool: "amazon_kindle_add_plan", readOnly: true, risk: "read" as const },
+  {
+    key: "doctor",
+    cli: "doctor",
+    mcpTool: "amazon_kindle_doctor",
+    readOnly: true,
+    risk: "read" as const,
+  },
+  {
+    key: "auth-status",
+    cli: "auth status",
+    mcpTool: "amazon_kindle_auth_status",
+    readOnly: true,
+    risk: "read" as const,
+  },
+  {
+    key: "auth-verify",
+    cli: "auth verify",
+    mcpTool: "amazon_kindle_auth_verify",
+    readOnly: true,
+    risk: "read" as const,
+  },
+  {
+    key: "auth-import",
+    cli: "auth import",
+    mcpTool: "amazon_kindle_auth_import",
+    readOnly: false,
+    risk: "write-safe" as const,
+  },
+  {
+    key: "wishlist-list",
+    cli: "wishlist list",
+    mcpTool: "amazon_kindle_wishlist_list",
+    readOnly: true,
+    risk: "read" as const,
+  },
+  {
+    key: "wishlist-add",
+    cli: "wishlist add",
+    mcpTool: "amazon_kindle_wishlist_add",
+    readOnly: false,
+    risk: "write-mutate" as const,
+  },
+  {
+    key: "kindle-send",
+    cli: "kindle send",
+    mcpTool: "amazon_kindle_send",
+    readOnly: false,
+    risk: "write-mutate" as const,
+  },
+  {
+    key: "kindle-send-plan",
+    cli: "kindle send --dry-run",
+    mcpTool: "amazon_kindle_send_plan",
+    readOnly: true,
+    risk: "read" as const,
+  },
+  {
+    key: "kindle-recent",
+    cli: "kindle recent",
+    mcpTool: "amazon_kindle_recent_docs",
+    readOnly: true,
+    risk: "read" as const,
+  },
+  {
+    key: "content-devices",
+    cli: "content devices",
+    mcpTool: "amazon_kindle_content_devices",
+    readOnly: true,
+    risk: "read" as const,
+  },
+  {
+    key: "kindle-books",
+    cli: "kindle books",
+    mcpTool: "amazon_kindle_books",
+    readOnly: true,
+    risk: "read" as const,
+  },
+  {
+    key: "kindle-pdocs",
+    cli: "kindle pdocs",
+    mcpTool: "amazon_kindle_pdocs",
+    readOnly: true,
+    risk: "read" as const,
+  },
+  {
+    key: "goodreads-sync-plan",
+    cli: "sync goodreads-plan",
+    mcpTool: "amazon_kindle_goodreads_sync_plan",
+    readOnly: true,
+    risk: "read" as const,
+  },
+  {
+    key: "parity",
+    cli: "parity",
+    mcpTool: "amazon_kindle_parity",
+    readOnly: true,
+    risk: "read" as const,
+  },
+  {
+    key: "photo-resolve",
+    cli: "books resolve",
+    mcpTool: "amazon_kindle_books_resolve",
+    readOnly: true,
+    risk: "read" as const,
+  },
+  {
+    key: "add-plan",
+    cli: "add-plan",
+    mcpTool: "amazon_kindle_add_plan",
+    readOnly: true,
+    risk: "read" as const,
+  },
 ] as const;
 
 function authPaths() {
@@ -65,18 +181,26 @@ export async function doctor(): Promise<CommandEnvelope> {
     process.env.AMAZON_COOKIE = process.env.AMAZON_COOKIES;
   }
   const cookie = Boolean(process.env.AMAZON_COOKIE);
-  const kindleEmail = Boolean(process.env.KINDLE_EMAIL || process.env.KINDLE_SEND_ADDRESS);
+  const kindleEmail = Boolean(
+    process.env.KINDLE_EMAIL || process.env.KINDLE_SEND_ADDRESS,
+  );
   const smtp = Boolean(
-    process.env.SMTP_HOST && process.env.SMTP_USER && (process.env.SMTP_PASS || process.env.SMTP_PASSWORD),
+    process.env.SMTP_HOST &&
+    process.env.SMTP_USER &&
+    (process.env.SMTP_PASS || process.env.SMTP_PASSWORD),
   );
   const cfg = loadLocalConfig();
   let live: unknown = null;
   if (cookie) {
     try {
-      const r = await executeAmazonGet("https://www.amazon.com/gp/css/homepage.html");
+      const r = await executeAmazonGet(
+        "https://www.amazon.com/gp/css/homepage.html",
+      );
       live = {
         status: r.status,
-        signedInHint: /Hello,\s*[^<]+/i.test(r.text) || /nav-link-accountList/i.test(r.text),
+        signedInHint:
+          /Hello,\s*[^<]+/i.test(r.text) ||
+          /nav-link-accountList/i.test(r.text),
         byteLength: r.byteLength,
       };
     } catch (e) {
@@ -92,18 +216,23 @@ export async function doctor(): Promise<CommandEnvelope> {
     live,
     capabilities: CAPABILITIES.map((c) => c.key),
     sendPaths: ["web (POST /sendtokindle/*)", "email (SMTP → KINDLE_EMAIL)"],
-        notes: [
-          "All product paths are HTTP/scriptable. Browser is auth-capture only, not runtime.",
-          "Wishlist list: GET ls + paginate GET /hz/wishlist/slv/items?paginationToken=…",
-          "Wishlist add: GET /dp/{ASIN} CSRF → POST /hz/wishlist/additemtolist",
-          "Kindle send default: web upload. Parity via wishlist HTTP + Goodreads RSS.",
-        ],
+    notes: [
+      "All product paths are HTTP/scriptable. Browser is auth-capture only, not runtime.",
+      "Wishlist list: GET ls + paginate GET /hz/wishlist/slv/items?paginationToken=…",
+      "Wishlist add: GET /dp/{ASIN} CSRF → POST /hz/wishlist/additemtolist",
+      "Kindle send default: web upload. Parity via wishlist HTTP + Goodreads RSS.",
+    ],
   });
 }
 
 export async function authStatus(): Promise<CommandEnvelope> {
   const cookie = process.env.AMAZON_COOKIE || process.env.AMAZON_COOKIES || "";
-  const names = cookie ? cookie.split(/;\s*/).map((p) => p.split("=")[0]).filter(Boolean) : [];
+  const names = cookie
+    ? cookie
+        .split(/;\s*/)
+        .map((p) => p.split("=")[0])
+        .filter(Boolean)
+    : [];
   return envelope("auth-status", "read", {
     present: Boolean(cookie),
     cookieCount: names.length,
@@ -130,7 +259,10 @@ export async function authVerify(
   },
 ): Promise<CommandEnvelope> {
   const cookie = process.env.AMAZON_COOKIE || process.env.AMAZON_COOKIES || "";
-  const results = await Promise.allSettled([probes.wishlist(), probes.kindle()]);
+  const results = await Promise.allSettled([
+    probes.wishlist(),
+    probes.kindle(),
+  ]);
   const retailReadable = results[0].status === "fulfilled";
   const retailSessionMode =
     results[0].status === "fulfilled" &&
@@ -142,9 +274,14 @@ export async function authVerify(
   const retailAuthenticated = retailReadable && retailSessionMode !== "public";
   const kindleAuthenticated =
     results[1].status === "fulfilled" &&
-    (results[1].value.status === undefined || (results[1].value.status >= 200 && results[1].value.status < 300));
+    (results[1].value.status === undefined ||
+      (results[1].value.status >= 200 && results[1].value.status < 300));
   const reason = (r: PromiseSettledResult<unknown>): string | null =>
-    r.status === "rejected" ? (r.reason instanceof Error ? r.reason.message : String(r.reason)) : null;
+    r.status === "rejected"
+      ? r.reason instanceof Error
+        ? r.reason.message
+        : String(r.reason)
+      : null;
   const ok = Boolean(cookie) && retailAuthenticated && kindleAuthenticated;
 
   return envelope(
@@ -172,13 +309,18 @@ export async function authVerify(
       warnings: ok
         ? []
         : retailReadable && kindleAuthenticated
-          ? ["Read paths are ready; wishlist writes require recent Amazon retail authentication"]
+          ? [
+              "Read paths are ready; wishlist writes require recent Amazon retail authentication",
+            ]
           : ["One or more Amazon HTTP read surfaces are unavailable"],
     },
   );
 }
 
-export async function authImport(opts: { file?: string; header?: string }): Promise<CommandEnvelope> {
+export async function authImport(opts: {
+  file?: string;
+  header?: string;
+}): Promise<CommandEnvelope> {
   let header = opts.header?.trim() || "";
   if (opts.file) {
     const raw = await readFile(opts.file, "utf8");
@@ -189,18 +331,23 @@ export async function authImport(opts: { file?: string; header?: string }): Prom
         header = parsed.cookies;
       } else {
         const arr = Array.isArray(parsed) ? parsed : parsed.cookies || parsed;
-        if (!Array.isArray(arr)) throw new Error("JSON must be cookies array or {cookies}");
+        if (!Array.isArray(arr))
+          throw new Error("JSON must be cookies array or {cookies}");
         const amazon = arr.filter(
-          (c: { domain?: string }) => !c.domain || String(c.domain).includes("amazon"),
+          (c: { domain?: string }) =>
+            !c.domain || String(c.domain).includes("amazon"),
         );
-        header = amazon.map((c: { name: string; value: string }) => `${c.name}=${c.value}`).join("; ");
+        header = amazon
+          .map((c: { name: string; value: string }) => `${c.name}=${c.value}`)
+          .join("; ");
       }
     } else if (trimmed.includes("\t")) {
       const parts: string[] = [];
       for (const line of trimmed.split(/\r?\n/)) {
         if (!line || line.startsWith("#")) continue;
         const cols = line.split("\t");
-        if (cols.length >= 7 && cols[0].includes("amazon")) parts.push(`${cols[5]}=${cols[6]}`);
+        if (cols.length >= 7 && cols[0].includes("amazon"))
+          parts.push(`${cols[5]}=${cols[6]}`);
       }
       header = parts.join("; ");
     } else {
@@ -220,7 +367,10 @@ export async function authImport(opts: { file?: string; header?: string }): Prom
     bat,
     `@echo off\nset "AMAZON_COOKIE=${header}"\nset "AMAZON_COOKIES=${header}"\nset "AMAZON_DOMAIN=www.amazon.com"\n`,
   );
-  const names = header.split(/;\s*/).map((p) => p.split("=")[0]).filter(Boolean);
+  const names = header
+    .split(/;\s*/)
+    .map((p) => p.split("=")[0])
+    .filter(Boolean);
   await writeFile(
     meta,
     JSON.stringify(
@@ -245,7 +395,13 @@ export async function authImport(opts: { file?: string; header?: string }): Prom
 }
 
 export async function wishlistList(
-  opts: { url?: string; listId?: string; fixture?: string; maxPages?: number; limit?: number } = {},
+  opts: {
+    url?: string;
+    listId?: string;
+    fixture?: string;
+    maxPages?: number;
+    limit?: number;
+  } = {},
 ): Promise<CommandEnvelope> {
   try {
     const result = await wishlistListHttp({
@@ -262,7 +418,14 @@ export async function wishlistList(
       "wishlist-list",
       "read",
       { error: msg },
-      { ok: false, warnings: [msg.includes("redirect") ? "session redirect — re-import AMAZON_COOKIE via auth import" : msg] },
+      {
+        ok: false,
+        warnings: [
+          msg.includes("redirect")
+            ? "session redirect — re-import AMAZON_COOKIE via auth import"
+            : msg,
+        ],
+      },
     );
   }
 }
@@ -281,7 +444,10 @@ export async function wishlistAdd(opts: {
     const query = [opts.title, opts.author].filter(Boolean).join(" ").trim();
     if (!query) throw new Error("asin or title required for HTTP wishlist add");
     const candidates = await resolveAmazonSearchHttp(query);
-    if (!candidates.length) throw new Error(`no Amazon product candidates found for ${JSON.stringify(query)}`);
+    if (!candidates.length)
+      throw new Error(
+        `no Amazon product candidates found for ${JSON.stringify(query)}`,
+      );
     // Retains legacy helper semantics (first Amazon search result), but returns the exact selection.
     asin = candidates[0].asin;
     resolvedFromSearch = { query, selected: candidates[0], candidates };
@@ -296,7 +462,12 @@ export async function wishlistAdd(opts: {
   }
 
   if (!opts.execute) {
-    const plan = await planWishlistHttpAdd({ asin, listId, execute: false, dryRun: true });
+    const plan = await planWishlistHttpAdd({
+      asin,
+      listId,
+      execute: false,
+      dryRun: true,
+    });
     return envelope("wishlist-add", "write-mutate", {
       submitted: false,
       via: "http",
@@ -305,7 +476,9 @@ export async function wishlistAdd(opts: {
       ...(resolvedList ? { resolvedList } : {}),
     });
   }
-  emitLiveMutationWarning("Amazon wishlist HTTP add (POST /hz/wishlist/additemtolist)");
+  emitLiveMutationWarning(
+    "Amazon wishlist HTTP add (POST /hz/wishlist/additemtolist)",
+  );
   const result = await executeWishlistHttpAdd({ asin, listId, execute: true });
   return envelope("wishlist-add", "write-mutate", {
     ...result,
@@ -315,7 +488,11 @@ export async function wishlistAdd(opts: {
 }
 
 function wishlistToRefs(
-  items: Array<{ title: string | null; author: string | null; asin: string | null }>,
+  items: Array<{
+    title: string | null;
+    author: string | null;
+    asin: string | null;
+  }>,
 ): BookRef[] {
   return items.map((it) => ({
     key: bookKey(it.title, it.author, it.asin),
@@ -329,13 +506,24 @@ function wishlistToRefs(
 export async function kindleSendPlan(
   opts: KindleSendOptions & { via?: "email" | "web" },
 ): Promise<CommandEnvelope> {
-  const via = opts.via || (opts.kindleEmail || process.env.KINDLE_EMAIL ? "email" : "web");
+  const via =
+    opts.via ||
+    (opts.kindleEmail || process.env.KINDLE_EMAIL ? "email" : "web");
   if (via === "web") {
-    const plan = await planWebUpload({ files: opts.files, execute: false, dryRun: true });
+    const plan = await planWebUpload({
+      files: opts.files,
+      execute: false,
+      dryRun: true,
+    });
     return envelope("kindle-send-plan", "read", { via, ...plan });
   }
   const plan = await planKindleSend(opts);
-  return envelope("kindle-send-plan", "read", { via, ...plan }, { warnings: plan.blockers });
+  return envelope(
+    "kindle-send-plan",
+    "read",
+    { via, ...plan },
+    { warnings: plan.blockers },
+  );
 }
 
 export async function kindleSend(
@@ -350,31 +538,49 @@ export async function kindleSend(
       archive: opts.archive,
     });
     if (plan.dryRun || !opts.execute) {
-      return envelope("kindle-send", "write-mutate", { submitted: false, via, plan });
+      return envelope("kindle-send", "write-mutate", {
+        submitted: false,
+        via,
+        plan,
+      });
     }
     emitLiveMutationWarning("Send-to-Kindle WEB upload");
-    const result = await executeWebUpload({ files: opts.files, execute: true, archive: opts.archive });
+    const result = await executeWebUpload({
+      files: opts.files,
+      execute: true,
+      archive: opts.archive,
+    });
     return envelope("kindle-send", "write-mutate", { via, ...result });
   }
   const plan = await planKindleSend(opts);
   if (plan.dryRun || !opts.execute) {
-    return envelope("kindle-send", "write-mutate", { submitted: false, via, plan }, { warnings: plan.blockers });
+    return envelope(
+      "kindle-send",
+      "write-mutate",
+      { submitted: false, via, plan },
+      { warnings: plan.blockers },
+    );
   }
   emitLiveMutationWarning("SMTP Send-to-Kindle");
   const result = await executeKindleSend({ ...opts, execute: true });
   return envelope("kindle-send", "write-mutate", { via, ...result });
 }
 
-export async function kindleRecent(opts: { limit?: number } = {}): Promise<CommandEnvelope> {
+export async function kindleRecent(
+  opts: { limit?: number } = {},
+): Promise<CommandEnvelope> {
   const data = await recentDocs(opts.limit);
   return envelope("kindle-recent", "read", data);
 }
 
 export async function contentDevices(): Promise<CommandEnvelope> {
-  const url = "https://www.amazon.com/hz/mycd/digital-console/contentlist/booksAll/dateDsc/";
+  const url =
+    "https://www.amazon.com/hz/mycd/digital-console/contentlist/booksAll/dateDsc/";
   const res = await executeAmazonGet(url);
   const signedOut =
-    /sign in/i.test(res.bodyPreview || "") && res.status === 200 && res.byteLength < 50_000;
+    /sign in/i.test(res.bodyPreview || "") &&
+    res.status === 200 &&
+    res.byteLength < 50_000;
   return envelope("content-devices", "read", {
     status: res.status,
     byteLength: res.byteLength,
@@ -384,18 +590,33 @@ export async function contentDevices(): Promise<CommandEnvelope> {
   });
 }
 
-async function kindleContent(kind: ContentKind, opts: { limit?: number; fixture?: string } = {}): Promise<CommandEnvelope> {
-  const data = await contentListHttp({ type: kind, limit: opts.limit, fixture: opts.fixture });
-  return envelope(kind === "books" ? "kindle-books" : "kindle-pdocs", "read", data);
+async function kindleContent(
+  kind: ContentKind,
+  opts: { limit?: number; fixture?: string } = {},
+): Promise<CommandEnvelope> {
+  const data = await contentListHttp({
+    type: kind,
+    limit: opts.limit,
+    fixture: opts.fixture,
+  });
+  return envelope(
+    kind === "books" ? "kindle-books" : "kindle-pdocs",
+    "read",
+    data,
+  );
 }
 
 /** Purchased Kindle Ebook inventory; distinct from recent Send-to-Kindle receipts. */
-export async function kindleBooks(opts: { limit?: number; fixture?: string } = {}): Promise<CommandEnvelope> {
+export async function kindleBooks(
+  opts: { limit?: number; fixture?: string } = {},
+): Promise<CommandEnvelope> {
   return kindleContent("books", opts);
 }
 
 /** Personal Document inventory metadata only; never document bytes or download/action URLs. */
-export async function kindlePdocs(opts: { limit?: number; fixture?: string } = {}): Promise<CommandEnvelope> {
+export async function kindlePdocs(
+  opts: { limit?: number; fixture?: string } = {},
+): Promise<CommandEnvelope> {
   return kindleContent("pdocs", opts);
 }
 
@@ -409,14 +630,34 @@ export async function goodreadsSyncPlan(
   } = {},
 ): Promise<CommandEnvelope> {
   const direction = opts.direction || "both";
-  const wl = await wishlistList({ url: opts.wishlistUrl, listId: opts.listId, fixture: opts.fixture });
-  if (!wl.ok) throw new Error(`wishlist read failed: ${JSON.stringify(wl.data)}`);
+  const wl = await wishlistList({
+    url: opts.wishlistUrl,
+    listId: opts.listId,
+    fixture: opts.fixture,
+  });
+  if (!wl.ok)
+    throw new Error(`wishlist read failed: ${JSON.stringify(wl.data)}`);
   const amazonItems =
-    (wl.data as { items?: Array<{ title: string | null; author: string | null; asin: string | null }> })
-      .items || [];
+    (
+      wl.data as {
+        items?: Array<{
+          title: string | null;
+          author: string | null;
+          asin: string | null;
+        }>;
+      }
+    ).items || [];
   const amazonRefs = wishlistToRefs(amazonItems);
-  const grRefs = await fetchGoodreadsShelfRss(goodreadsUserId(opts.userId), "to-read");
-  const parity = computeParity("amazon-wishlist", amazonRefs, "goodreads:to-read", grRefs);
+  const grRefs = await fetchGoodreadsShelfRss(
+    goodreadsUserId(opts.userId),
+    "to-read",
+  );
+  const parity = computeParity(
+    "amazon-wishlist",
+    amazonRefs,
+    "goodreads:to-read",
+    grRefs,
+  );
 
   const toGoodreads = parity.onlyLeft.map((b) => ({
     ...b,
@@ -447,16 +688,42 @@ export async function goodreadsSyncPlan(
 }
 
 export async function parityCheck(
-  opts: { userId?: string; shelf?: string; wishlistUrl?: string; listId?: string; fixture?: string } = {},
+  opts: {
+    userId?: string;
+    shelf?: string;
+    wishlistUrl?: string;
+    listId?: string;
+    fixture?: string;
+  } = {},
 ): Promise<CommandEnvelope> {
-  const wl = await wishlistList({ url: opts.wishlistUrl, listId: opts.listId, fixture: opts.fixture });
-  if (!wl.ok) throw new Error(`wishlist read failed: ${JSON.stringify(wl.data)}`);
+  const wl = await wishlistList({
+    url: opts.wishlistUrl,
+    listId: opts.listId,
+    fixture: opts.fixture,
+  });
+  if (!wl.ok)
+    throw new Error(`wishlist read failed: ${JSON.stringify(wl.data)}`);
   const amazonItems =
-    (wl.data as { items?: Array<{ title: string | null; author: string | null; asin: string | null }> })
-      .items || [];
+    (
+      wl.data as {
+        items?: Array<{
+          title: string | null;
+          author: string | null;
+          asin: string | null;
+        }>;
+      }
+    ).items || [];
   const amazonRefs = wishlistToRefs(amazonItems);
-  const grRefs = await fetchGoodreadsShelfRss(goodreadsUserId(opts.userId), opts.shelf || "to-read");
-  const report = computeParity("amazon-wishlist", amazonRefs, `goodreads:${opts.shelf || "to-read"}`, grRefs);
+  const grRefs = await fetchGoodreadsShelfRss(
+    goodreadsUserId(opts.userId),
+    opts.shelf || "to-read",
+  );
+  const report = computeParity(
+    "amazon-wishlist",
+    amazonRefs,
+    `goodreads:${opts.shelf || "to-read"}`,
+    grRefs,
+  );
   return envelope("parity", "read", {
     ...report,
     onlyLeft: report.onlyLeft.slice(0, 200),
@@ -484,7 +751,9 @@ export async function booksResolve(opts: {
       .map((l) => l.trim())
       .filter(Boolean);
     title = lines[0] || null;
-    const by = opts.text.match(/\bby\s+([A-Z][\w.'\-]+(?:\s+[A-Z][\w.'\-]+){0,3})/);
+    const by = opts.text.match(
+      /\bby\s+([A-Z][\w.'\-]+(?:\s+[A-Z][\w.'\-]+){0,3})/,
+    );
     if (by) author = by[1];
   }
   const asin = opts.asin || null;
@@ -514,13 +783,22 @@ export async function booksResolve(opts: {
     amazonUrl,
     actions: {
       goodreads: goodreadsId
-        ? { tool: "goodreads_shelf_add", args: { bookId: goodreadsId, shelf: "to-read", execute: false } }
-        : { tool: "goodreads_shelf_add", resolve: "search first", execute: false },
+        ? {
+            tool: "goodreads_shelf_add",
+            args: { bookId: goodreadsId, shelf: "to-read", execute: false },
+          }
+        : {
+            tool: "goodreads_shelf_add",
+            resolve: "search first",
+            execute: false,
+          },
       amazonWishlist: {
-              path: amazonUrl,
-              note: "HTTP: books resolve → wishlist add --asin <ASIN> --execute; title input uses HTTP /s resolution.",
-            },
-      kindle: { note: "If you have an EPUB/PDF: kindle send --via web --execute" },
+        path: amazonUrl,
+        note: "HTTP: books resolve → wishlist add --asin <ASIN> --execute; title input uses HTTP /s resolution.",
+      },
+      kindle: {
+        note: "If you have an EPUB/PDF: kindle send --via web --execute",
+      },
     },
   });
 }
@@ -538,8 +816,10 @@ export async function addPlan(opts: {
     ...(resolved.data as object),
     targets,
     executeGates: {
-      goodreads: "goodreads-cli shelves add --book-id <id> --name to-read --execute",
-      amazon: "amazon-kindle-cli wishlist add --asin <ASIN> --execute (or title/author → HTTP search resolution)",
+      goodreads:
+        "goodreads-cli shelves add --book-id <id> --name to-read --execute",
+      amazon:
+        "amazon-kindle-cli wishlist add --asin <ASIN> --execute (or title/author → HTTP search resolution)",
       kindle: "amazon-kindle-cli kindle send <file> --via web --execute",
     },
   });

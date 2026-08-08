@@ -15,7 +15,9 @@ function scriptPath(): string {
   return join(here, "../../../scripts/kindle-browser-upload.py");
 }
 
-export async function browserSendToKindle(opts: BrowserSendOptions): Promise<Record<string, unknown>> {
+export async function browserSendToKindle(
+  opts: BrowserSendOptions,
+): Promise<Record<string, unknown>> {
   const py = process.env.PYTHON || "python";
   const args = [scriptPath(), ...opts.files];
   if (opts.execute) args.push("--execute");
@@ -34,11 +36,19 @@ export async function browserSendToKindle(opts: BrowserSendOptions): Promise<Rec
       try {
         data = JSON.parse(out.trim());
       } catch {
-        reject(new Error(`kindle browser uploader exit=${code}; stdout=${out.slice(0, 500)} stderr=${err.slice(0, 500)}`));
+        reject(
+          new Error(
+            `kindle browser uploader exit=${code}; stdout=${out.slice(0, 500)} stderr=${err.slice(0, 500)}`,
+          ),
+        );
         return;
       }
       if (code !== 0 || data.ok === false) {
-        reject(new Error(`kindle browser uploader failed: ${String(data.error || err || code)}`));
+        reject(
+          new Error(
+            `kindle browser uploader failed: ${String(data.error || err || code)}`,
+          ),
+        );
         return;
       }
       resolve(data);

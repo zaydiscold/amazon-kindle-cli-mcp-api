@@ -7,7 +7,13 @@ export interface BookRef {
   author: string | null;
   asin?: string | null;
   goodreadsId?: string | null;
-  source: "amazon-wishlist" | "kindle-library" | "goodreads-shelf" | "photo" | "epub" | "manual";
+  source:
+    | "amazon-wishlist"
+    | "kindle-library"
+    | "goodreads-shelf"
+    | "photo"
+    | "epub"
+    | "manual";
   raw?: Record<string, unknown>;
 }
 
@@ -35,7 +41,11 @@ export function normalizeAuthor(author: string | null | undefined): string {
     .trim();
 }
 
-export function bookKey(title: string | null, author?: string | null, asin?: string | null): string {
+export function bookKey(
+  title: string | null,
+  author?: string | null,
+  asin?: string | null,
+): string {
   // Never make ASIN the only key: Goodreads records usually have no ASIN.
   // ASIN is an exact-match bonus in refsEqual; title+author is cross-surface identity.
   void asin;
@@ -46,13 +56,17 @@ export function bookKey(title: string | null, author?: string | null, asin?: str
 }
 
 export function refsEqual(a: BookRef, b: BookRef): boolean {
-  if (a.asin && b.asin && a.asin.toUpperCase() === b.asin.toUpperCase()) return true;
-  if (a.goodreadsId && b.goodreadsId && a.goodreadsId === b.goodreadsId) return true;
+  if (a.asin && b.asin && a.asin.toUpperCase() === b.asin.toUpperCase())
+    return true;
+  if (a.goodreadsId && b.goodreadsId && a.goodreadsId === b.goodreadsId)
+    return true;
   // Title/author fallback is deliberately independent of ASIN availability.
   const at = normalizeTitle(a.title);
   const bt = normalizeTitle(b.title);
-  const aa = normalizeAuthor(a.author).split(" ").filter(Boolean).slice(-1)[0] || "";
-  const ba = normalizeAuthor(b.author).split(" ").filter(Boolean).slice(-1)[0] || "";
+  const aa =
+    normalizeAuthor(a.author).split(" ").filter(Boolean).slice(-1)[0] || "";
+  const ba =
+    normalizeAuthor(b.author).split(" ").filter(Boolean).slice(-1)[0] || "";
   return Boolean(at && bt && at === bt && aa && ba && aa === ba);
 }
 

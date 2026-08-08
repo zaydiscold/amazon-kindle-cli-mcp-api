@@ -9,8 +9,13 @@ export interface WishlistBrowserAddOptions {
   execute?: boolean;
 }
 
-export async function browserWishlistAdd(opts: WishlistBrowserAddOptions): Promise<Record<string, unknown>> {
-  const root = join(dirname(fileURLToPath(import.meta.url)), "../../../scripts");
+export async function browserWishlistAdd(
+  opts: WishlistBrowserAddOptions,
+): Promise<Record<string, unknown>> {
+  const root = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "../../../scripts",
+  );
   const script = join(root, "amazon-wishlist-add.py");
   const args = [script];
   if (opts.asin) args.push("--asin", opts.asin);
@@ -19,7 +24,9 @@ export async function browserWishlistAdd(opts: WishlistBrowserAddOptions): Promi
   if (opts.execute) args.push("--execute");
 
   return await new Promise((resolve, reject) => {
-    const proc = spawn(process.env.PYTHON || "python", args, { windowsHide: true });
+    const proc = spawn(process.env.PYTHON || "python", args, {
+      windowsHide: true,
+    });
     let out = "";
     let err = "";
     proc.stdout.on("data", (d) => (out += String(d)));
@@ -28,10 +35,13 @@ export async function browserWishlistAdd(opts: WishlistBrowserAddOptions): Promi
     proc.once("close", (code) => {
       try {
         const data = JSON.parse(out.trim()) as Record<string, unknown>;
-        if (code !== 0 || data.ok === false) reject(new Error(String(data.error || err || code)));
+        if (code !== 0 || data.ok === false)
+          reject(new Error(String(data.error || err || code)));
         else resolve(data);
       } catch {
-        reject(new Error(`wishlist browser helper exit=${code}: ${err || out}`));
+        reject(
+          new Error(`wishlist browser helper exit=${code}: ${err || out}`),
+        );
       }
     });
   });

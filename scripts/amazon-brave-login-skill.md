@@ -34,6 +34,7 @@ python "$env:LOCALAPPDATA/amazon-kindle-debug-profile/brave_amazon_login.py" --e
 ```
 
 The script:
+
 1. Navigates to sign-in
 2. Fills email and password
 3. Waits for OTP challenge
@@ -45,6 +46,7 @@ python .../brave_amazon_login.py --otp 123456
 ```
 
 The script then:
+
 - Cancels any passkey save prompt
 - Dumps all amazon.com cookies to `~/.amazon/auth.sh`
 - Writes `~/.amazon/auth.bat` for Windows cmd

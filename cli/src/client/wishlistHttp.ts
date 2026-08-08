@@ -52,7 +52,8 @@ export function parseAddItemResponse(html: string): {
   listId: string | null;
   message: string | null;
 } {
-  const alreadyOnList = /already in/i.test(html) || /moved it to the top/i.test(html);
+  const alreadyOnList =
+    /already in/i.test(html) || /moved it to the top/i.test(html);
   const success =
     alreadyOnList ||
     /huc-atwl/i.test(html) ||
@@ -70,7 +71,9 @@ export function parseAddItemResponse(html: string): {
   };
 }
 
-async function amazonGet(url: string): Promise<{ status: number; text: string; headers: Headers }> {
+async function amazonGet(
+  url: string,
+): Promise<{ status: number; text: string; headers: Headers }> {
   const cookie = requireCookie();
   const res = await fetch(url, {
     method: "GET",
@@ -145,7 +148,8 @@ export async function executeWishlistHttpAdd(opts: WishlistHttpAddOptions) {
         via: "http" as const,
         plan,
         ok: false,
-        error: "could not extract anti-csrftoken-a2z from product or wishlist HTML",
+        error:
+          "could not extract anti-csrftoken-a2z from product or wishlist HTML",
         productStatus: product.status,
         mutationVerified: false as const,
         verificationRequired: "capture product HTML fixture or re-auth",
@@ -169,17 +173,20 @@ async function postAdd(
   body.set("isAjax", "1");
   if (plan.listId) body.set("listId", plan.listId);
 
-  const res = await fetch("https://www.amazon.com/hz/wishlist/additemtolist?ie=UTF8", {
-    method: "POST",
-    headers: {
-          ...amazonXhrHeaders(cookie, referer),
-          "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
-          "anti-csrftoken-a2z": csrf,
-        },
-    body: body.toString(),
-    redirect: "manual",
-    signal: AbortSignal.timeout(45_000),
-  });
+  const res = await fetch(
+    "https://www.amazon.com/hz/wishlist/additemtolist?ie=UTF8",
+    {
+      method: "POST",
+      headers: {
+        ...amazonXhrHeaders(cookie, referer),
+        "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
+        "anti-csrftoken-a2z": csrf,
+      },
+      body: body.toString(),
+      redirect: "manual",
+      signal: AbortSignal.timeout(45_000),
+    },
+  );
   const text = await res.text();
   const parsed = parseAddItemResponse(text);
   // 200 + huc-atwl / already-in = real success (403 was bad CSRF)
