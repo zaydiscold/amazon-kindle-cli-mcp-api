@@ -15,10 +15,12 @@
     "lint": "eslint cli/src cli/test mcp/src mcp/test",
     "format": "prettier --write cli/src cli/test mcp/src mcp/test scripts",
     "format:check": "prettier --check cli/src cli/test mcp/src mcp/test scripts",
+    "audit:security": "corepack pnpm@11.13.0 --pm-on-fail=ignore audit --audit-level moderate",
     "cli": "pnpm --filter @zaydiscold/amazon-kindle-cli cli",
     "mcp": "scripts/amazon-kindle-mcp.sh",
     "regression:recent": "pnpm --filter @zaydiscold/amazon-kindle-cli exec vitest run test/authVerify.test.ts test/wishlist.test.ts && node scripts/test-python.mjs && pnpm format:check",
-    "doctor": "node scripts/doctor.mjs"
+    "doctor": "node scripts/doctor.mjs",
+    "check": "pnpm audit:security && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@types/node": "^25.9.5",
