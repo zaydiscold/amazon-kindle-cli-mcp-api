@@ -1,7 +1,7 @@
 {
   "name": "@zaydiscold/amazon-kindle-cli",
-  "version": "0.1.0",
-  "description": "Kindle-first Amazon CLI + API map: Send to Kindle, wishlists, content devices, Goodreads bridge.",
+  "version": "0.3.0",
+  "description": "HTTP-first Amazon and Kindle CLI for wishlists, Send to Kindle, content inventory, photo-to-book plans, and Goodreads parity.",
   "type": "module",
   "bin": {
     "amazon-kindle-cli": "dist/index.js"
@@ -39,6 +39,14 @@
   "engines": {
     "node": ">=20"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zaydiscold/amazon-kindle-cli-mcp-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zaydiscold/amazon-kindle-cli-mcp-api/issues"
+  },
+  "homepage": "https://github.com/zaydiscold/amazon-kindle-cli-mcp-api#readme",
   "author": "Zayd Khan (@ColdCooks / zaydiscold)",
   "license": "MIT"
 }
