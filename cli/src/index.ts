@@ -8,12 +8,16 @@ import { resolve } from "node:path";
 function loadAuthFile(): void {
   const path =
     process.env.AMAZON_AUTH_FILE ||
-    resolve(process.env.USERPROFILE || process.env.HOME || "", ".amazon/auth.sh");
+    resolve(
+      process.env.USERPROFILE || process.env.HOME || "",
+      ".amazon/auth.sh",
+    );
   try {
     const text = readFileSync(path, "utf8");
     for (const line of text.split(/\r?\n/)) {
       const quoted = line.match(/^export\s+([A-Z0-9_]+)='(.*)'\s*$/);
-      if (quoted?.[1] && !process.env[quoted[1]]) process.env[quoted[1]] = quoted[2];
+      if (quoted?.[1] && !process.env[quoted[1]])
+        process.env[quoted[1]] = quoted[2];
       const plain = line.match(/^export\s+([A-Z0-9_]+)=(.*)$/);
       if (plain?.[1] && !process.env[plain[1]]) {
         process.env[plain[1]] = plain[2]?.replace(/^["']|["']$/g, "");
@@ -30,7 +34,11 @@ function loadAuthFile(): void {
 loadAuthFile();
 
 function positiveLimit(value: string): number {
-  if (!/^\d+$/.test(value) || Number(value) < 1 || !Number.isSafeInteger(Number(value))) {
+  if (
+    !/^\d+$/.test(value) ||
+    Number(value) < 1 ||
+    !Number.isSafeInteger(Number(value))
+  ) {
     throw new Error("value must be a positive integer");
   }
   return Number(value);
@@ -40,24 +48,41 @@ const program = new Command();
 program
   .name("amazon-kindle-cli")
   .version("0.3.0")
-  .description("Kindle-first Amazon CLI + MCP using scriptable HTTP product paths")
+  .description(
+    "Kindle-first Amazon CLI + MCP using scriptable HTTP product paths",
+  )
   .option("--json", "JSON output", true);
 
-program.command("doctor").action(async () => printJson(await engine.doctor(), true));
+program
+  .command("doctor")
+  .action(async () => printJson(await engine.doctor(), true));
 
 const auth = program.command("auth").description("Amazon session auth");
-auth.command("status").action(async () => printJson(await engine.authStatus(), true));
+auth
+  .command("status")
+  .action(async () => printJson(await engine.authStatus(), true));
 auth
   .command("verify")
-  .description("Verify the persisted session against Amazon retail and Kindle HTTP surfaces")
+  .description(
+    "Verify the persisted session against Amazon retail and Kindle HTTP surfaces",
+  )
   .option("--list-id <id>", "Wishlist id (or AMAZON_WISHLIST_ID)")
-  .action(async (options) => printJson(await engine.authVerify({ listId: options.listId }), true));
+  .action(async (options) =>
+    printJson(await engine.authVerify({ listId: options.listId }), true),
+  );
 auth
   .command("import")
-  .requiredOption("--file <path>", "Cookie-Editor JSON, Netscape cookies, or raw Cookie header")
-  .action(async (options) => printJson(await engine.authImport({ file: options.file }), true));
+  .requiredOption(
+    "--file <path>",
+    "Cookie-Editor JSON, Netscape cookies, or raw Cookie header",
+  )
+  .action(async (options) =>
+    printJson(await engine.authImport({ file: options.file }), true),
+  );
 
-const wishlist = program.command("wishlist").description("Amazon wish lists over HTTP");
+const wishlist = program
+  .command("wishlist")
+  .description("Amazon wish lists over HTTP");
 wishlist
   .command("list")
   .description("List wishlist items through bounded HTTP pagination")
@@ -80,7 +105,9 @@ wishlist
   );
 wishlist
   .command("add")
-  .description("Preview or add an exact ASIN through POST /hz/wishlist/additemtolist")
+  .description(
+    "Preview or add an exact ASIN through POST /hz/wishlist/additemtolist",
+  )
   .option("--asin <asin>")
   .option("--title <title>", "Title to resolve when ASIN is omitted")
   .option("--author <author>", "Optional author for title resolution")
@@ -108,10 +135,14 @@ wishlist
     ),
   );
 
-const kindle = program.command("kindle").description("Kindle delivery and library reads");
+const kindle = program
+  .command("kindle")
+  .description("Kindle delivery and library reads");
 kindle
   .command("send")
-  .description("Preview or send EPUB/PDF files through web upload or email SMTP")
+  .description(
+    "Preview or send EPUB/PDF files through web upload or email SMTP",
+  )
   .argument("<files...>", "Files to send")
   .option("--via <path>", "web or email", "web")
   .option("--kindle-email <email>", "Kindle address for the email path")
@@ -124,11 +155,15 @@ kindle
   .option("--dry-run", "Force plan only", false)
   .action(async (files, options) => {
     if (options.via === "browser") {
-      throw new Error("browser send is not a product transport; use web or email");
+      throw new Error(
+        "browser send is not a product transport; use web or email",
+      );
     }
     const via = options.via === "email" ? "email" : "web";
     const operation =
-      options.execute && !options.dryRun ? engine.kindleSend : engine.kindleSendPlan;
+      options.execute && !options.dryRun
+        ? engine.kindleSend
+        : engine.kindleSendPlan;
     printJson(
       await operation({
         files,
@@ -144,16 +179,26 @@ kindle
   });
 kindle
   .command("recent")
-  .description("Recent Send-to-Kindle receipts, not the full personal-document inventory")
+  .description(
+    "Recent Send-to-Kindle receipts, not the full personal-document inventory",
+  )
   .option("--limit <n>", "Maximum receipts", positiveLimit)
-  .action(async (options) => printJson(await engine.kindleRecent({ limit: options.limit }), true));
+  .action(async (options) =>
+    printJson(await engine.kindleRecent({ limit: options.limit }), true),
+  );
 kindle
   .command("books")
   .description("List purchased Kindle Ebook metadata through MYCD")
   .option("--limit <n>", "Maximum items", positiveLimit)
   .option("--fixture <path>", "Synthetic fixture for deterministic parsing")
   .action(async (options) =>
-    printJson(await engine.kindleBooks({ limit: options.limit, fixture: options.fixture }), true),
+    printJson(
+      await engine.kindleBooks({
+        limit: options.limit,
+        fixture: options.fixture,
+      }),
+      true,
+    ),
   );
 kindle
   .command("pdocs")
@@ -161,10 +206,18 @@ kindle
   .option("--limit <n>", "Maximum items", positiveLimit)
   .option("--fixture <path>", "Synthetic fixture for deterministic parsing")
   .action(async (options) =>
-    printJson(await engine.kindlePdocs({ limit: options.limit, fixture: options.fixture }), true),
+    printJson(
+      await engine.kindlePdocs({
+        limit: options.limit,
+        fixture: options.fixture,
+      }),
+      true,
+    ),
   );
 
-const content = program.command("content").description("Manage Your Content probes");
+const content = program
+  .command("content")
+  .description("Manage Your Content probes");
 content
   .command("devices")
   .description("Probe Manage Your Content digital console")
@@ -197,7 +250,9 @@ sync
 
 program
   .command("parity")
-  .description("Diff an Amazon wishlist against an explicit Goodreads shelf/account")
+  .description(
+    "Diff an Amazon wishlist against an explicit Goodreads shelf/account",
+  )
   .option("--user <id>", "Goodreads user id; no personal fallback is used")
   .option("--shelf <slug>", "Goodreads shelf", "to-read")
   .option("--fixture <path>")
@@ -216,14 +271,18 @@ program
     ),
   );
 
-const books = program.command("books").description("Resolve titles or photos into add plans");
+const books = program
+  .command("books")
+  .description("Resolve titles or photos into add plans");
 books
   .command("resolve")
   .option("--title <title>")
   .option("--author <author>")
   .option("--asin <asin>")
   .option("--text <ocr>", "Freeform OCR or vision text")
-  .action(async (options) => printJson(await engine.booksResolve(options), true));
+  .action(async (options) =>
+    printJson(await engine.booksResolve(options), true),
+  );
 
 program
   .command("add-plan")

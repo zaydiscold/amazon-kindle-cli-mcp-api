@@ -1,5 +1,8 @@
 import { amazonNavigateHeaders } from "./httpHeaders.js";
-import { assertTrustedAmazonUrl, TRUSTED_AMAZON_ORIGIN } from "./trustedAmazon.js";
+import {
+  assertTrustedAmazonUrl,
+  TRUSTED_AMAZON_ORIGIN,
+} from "./trustedAmazon.js";
 
 const MAX_AMAZON_RESPONSE_BYTES = 8 * 1024 * 1024;
 
@@ -39,7 +42,9 @@ function validateRedirect(response: Response, requestUrl: URL): void {
   if (!location) return;
   const redirect = new URL(location, requestUrl);
   if (redirect.origin !== TRUSTED_AMAZON_ORIGIN) {
-    throw new Error(`Amazon returned a cross-origin redirect to ${redirect.origin}`);
+    throw new Error(
+      `Amazon returned a cross-origin redirect to ${redirect.origin}`,
+    );
   }
 }
 

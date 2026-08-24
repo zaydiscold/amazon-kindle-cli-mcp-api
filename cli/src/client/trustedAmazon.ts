@@ -22,7 +22,8 @@ export function assertTrustedAmazonUrl(
     throw new Error("Amazon requests require HTTPS");
   }
   if (url.origin === TRUSTED_AMAZON_ORIGIN) return url;
-  if (options.allowPresignedUpload && isAmazonUploadHost(url.hostname)) return url;
+  if (options.allowPresignedUpload && isAmazonUploadHost(url.hostname))
+    return url;
   throw new Error(
     `Amazon requests are restricted to ${TRUSTED_AMAZON_ORIGIN}` +
       (options.allowPresignedUpload ? " or an Amazon S3 upload host" : ""),
@@ -34,5 +35,7 @@ export function trustedAmazonUrl(value: string): string {
 }
 
 export function trustedPresignedUploadUrl(value: string): string {
-  return assertTrustedAmazonUrl(value, { allowPresignedUpload: true }).toString();
+  return assertTrustedAmazonUrl(value, {
+    allowPresignedUpload: true,
+  }).toString();
 }

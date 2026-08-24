@@ -4,7 +4,10 @@
  */
 import { cookieHeader, readBoundedText } from "./live.js";
 import { amazonNavigateHeaders, amazonXhrHeaders } from "./httpHeaders.js";
-import { assertTrustedAmazonUrl, TRUSTED_AMAZON_ORIGIN } from "./trustedAmazon.js";
+import {
+  assertTrustedAmazonUrl,
+  TRUSTED_AMAZON_ORIGIN,
+} from "./trustedAmazon.js";
 
 export interface WishlistHttpAddOptions {
   asin: string;
@@ -32,7 +35,8 @@ export function extractAntiCsrf(html: string): string | null {
   ];
   for (const pattern of patterns) {
     const match = html.match(pattern);
-    if (match?.[1]) return match[1].replace(/\\u002F/g, "/").replace(/&quot;/g, '"');
+    if (match?.[1])
+      return match[1].replace(/\\u002F/g, "/").replace(/&quot;/g, '"');
   }
   return null;
 }
@@ -43,8 +47,13 @@ export function parseAddItemResponse(html: string): {
   listId: string | null;
   message: string | null;
 } {
-  const alreadyOnList = /already in/i.test(html) || /moved it to the top/i.test(html);
-  const success = alreadyOnList || /huc-atwl/i.test(html) || /view your list/i.test(html) || /added to/i.test(html);
+  const alreadyOnList =
+    /already in/i.test(html) || /moved it to the top/i.test(html);
+  const success =
+    alreadyOnList ||
+    /huc-atwl/i.test(html) ||
+    /view your list/i.test(html) ||
+    /added to/i.test(html);
   const listMatch = html.match(/\/hz\/wishlist\/ls\/([A-Z0-9]{10,})/i);
   const messageMatch =
     html.match(/huc-atwl-header-main[^>]*>([^<]+)/i) ||
@@ -57,7 +66,9 @@ export function parseAddItemResponse(html: string): {
   };
 }
 
-async function amazonGet(value: string): Promise<{ status: number; text: string; location: string | null }> {
+async function amazonGet(
+  value: string,
+): Promise<{ status: number; text: string; location: string | null }> {
   const url = assertTrustedAmazonUrl(value);
   const cookie = requireCookie();
   const response = await fetch(url, {
@@ -70,15 +81,22 @@ async function amazonGet(value: string): Promise<{ status: number; text: string;
   if (location && response.status >= 300 && response.status < 400) {
     const redirect = new URL(location, url);
     if (redirect.origin !== TRUSTED_AMAZON_ORIGIN) {
-      throw new Error(`Amazon returned a cross-origin redirect to ${redirect.origin}`);
+      throw new Error(
+        `Amazon returned a cross-origin redirect to ${redirect.origin}`,
+      );
     }
   }
-  return { status: response.status, text: await readBoundedText(response), location };
+  return {
+    status: response.status,
+    text: await readBoundedText(response),
+    location,
+  };
 }
 
 export async function planWishlistHttpAdd(opts: WishlistHttpAddOptions) {
   const asin = opts.asin.trim().toUpperCase();
-  if (!/^[A-Z0-9]{10}$/.test(asin)) throw new Error(`invalid ASIN: ${opts.asin}`);
+  if (!/^[A-Z0-9]{10}$/.test(asin))
+    throw new Error(`invalid ASIN: ${opts.asin}`);
   const dryRun = opts.dryRun || !opts.execute;
   return {
     dryRun,
@@ -151,7 +169,8 @@ export async function executeWishlistHttpAdd(opts: WishlistHttpAddOptions) {
         error: "could not extract wishlist CSRF token; response bodies omitted",
         productStatus: product.status,
         mutationVerified: false as const,
-        verificationRequired: "refresh authentication or update the sanitized parser fixture",
+        verificationRequired:
+          "refresh authentication or update the sanitized parser fixture",
       };
     }
     return postAdd(plan, cookie, fallback, productUrl);
@@ -173,17 +192,20 @@ async function postAdd(
   });
   if (plan.listId) body.set("listId", plan.listId);
 
-  const response = await fetch(`${TRUSTED_AMAZON_ORIGIN}/hz/wishlist/additemtolist?ie=UTF8`, {
-    method: "POST",
-    headers: {
-      ...amazonXhrHeaders(cookie, referer),
-      "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
-      "anti-csrftoken-a2z": csrf,
+  const response = await fetch(
+    `${TRUSTED_AMAZON_ORIGIN}/hz/wishlist/additemtolist?ie=UTF8`,
+    {
+      method: "POST",
+      headers: {
+        ...amazonXhrHeaders(cookie, referer),
+        "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
+        "anti-csrftoken-a2z": csrf,
+      },
+      body: body.toString(),
+      redirect: "manual",
+      signal: AbortSignal.timeout(45_000),
     },
-    body: body.toString(),
-    redirect: "manual",
-    signal: AbortSignal.timeout(45_000),
-  });
+  );
   const text = await readBoundedText(response);
   const parsed = parseAddItemResponse(text);
   const ok = response.ok && parsed.success;

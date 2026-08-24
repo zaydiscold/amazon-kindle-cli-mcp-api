@@ -45,13 +45,16 @@ export type McpProfile = "full" | "core" | "read";
 
 export function parseMcpProfile(value: string | undefined): McpProfile {
   const profile = value?.trim() || "read";
-  if (profile === "full" || profile === "core" || profile === "read") return profile;
+  if (profile === "full" || profile === "core" || profile === "read")
+    return profile;
   throw new Error(
     `AMAZON_KINDLE_MCP_PROFILE must be one of full, core, read (received ${JSON.stringify(profile)})`,
   );
 }
 
-export function toolsForProfile(profile: McpProfile): ReadonlySet<AmazonKindleToolName> {
+export function toolsForProfile(
+  profile: McpProfile,
+): ReadonlySet<AmazonKindleToolName> {
   if (profile === "full") return new Set(FULL_TOOL_NAMES);
   if (profile === "core") return new Set(CORE_TOOL_NAMES);
   return new Set(READ_TOOL_NAMES);

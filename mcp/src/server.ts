@@ -16,7 +16,10 @@ import { resolveMcpFile, resolveOptionalMcpFile } from "./pathPolicy.js";
 function loadAuth(): void {
   const path =
     process.env.AMAZON_AUTH_FILE ||
-    resolve(process.env.USERPROFILE || process.env.HOME || "", ".amazon/auth.sh");
+    resolve(
+      process.env.USERPROFILE || process.env.HOME || "",
+      ".amazon/auth.sh",
+    );
   try {
     const text = readFileSync(path, "utf8");
     for (const line of text.split(/\r?\n/)) {
@@ -73,7 +76,8 @@ function add<Shape extends z.ZodRawShape>(
       inputSchema: schema,
       annotations: toolAnnotations,
     },
-    async (args) => response(await handler(args)),
+    async (args) =>
+      response(await handler(args as z.infer<z.ZodObject<Shape>>)),
   );
 }
 
@@ -175,9 +179,19 @@ add(
     execute: z.boolean().default(false),
     dryRun: z.boolean().default(false),
     archive: z.boolean().optional(),
-    approvedFileSha256: z.array(z.string().regex(/^[a-f0-9]{64}$/i)).default([]),
+    approvedFileSha256: z
+      .array(z.string().regex(/^[a-f0-9]{64}$/i))
+      .default([]),
   },
-  async ({ files, via, kindleEmail, execute, dryRun, archive, approvedFileSha256 }) =>
+  async ({
+    files,
+    via,
+    kindleEmail,
+    execute,
+    dryRun,
+    archive,
+    approvedFileSha256,
+  }) =>
     engine.kindleSend({
       files: files.map(resolveMcpFile),
       via,
@@ -238,7 +252,9 @@ add(
     listId: z.string().optional(),
     fixture: z.string().optional(),
     userId: z.string().optional(),
-    direction: z.enum(["amazon-to-goodreads", "goodreads-to-amazon", "both"]).optional(),
+    direction: z
+      .enum(["amazon-to-goodreads", "goodreads-to-amazon", "both"])
+      .optional(),
   },
   async ({ url, listId, fixture, userId, direction }) =>
     engine.goodreadsSyncPlan({

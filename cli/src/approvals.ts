@@ -16,7 +16,8 @@ export function requireExactApproval(
   actual: string,
   approved: string | undefined,
 ): void {
-  if (!approved?.trim()) throw new Error(`${label} approval is required for execute`);
+  if (!approved?.trim())
+    throw new Error(`${label} approval is required for execute`);
   if (approved.trim() !== actual) throw new Error(`${label} approval mismatch`);
 }
 
@@ -29,13 +30,22 @@ export async function fileApprovalHashes(paths: string[]): Promise<string[]> {
   return Promise.all(paths.map((path) => sha256File(path)));
 }
 
-export function requireFileHashApprovals(actual: string[], approved: string[] | undefined): void {
+export function requireFileHashApprovals(
+  actual: string[],
+  approved: string[] | undefined,
+): void {
   const expected = [...actual].sort();
-  const supplied = [...(approved ?? [])].map((value) => value.trim()).filter(Boolean).sort();
+  const supplied = [...(approved ?? [])]
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .sort();
   if (supplied.length === 0) {
     throw new Error("approvedFileSha256 is required for execute");
   }
-  if (expected.length !== supplied.length || expected.some((value, index) => supplied[index] !== value)) {
+  if (
+    expected.length !== supplied.length ||
+    expected.some((value, index) => supplied[index] !== value)
+  ) {
     throw new Error("approvedFileSha256 mismatch");
   }
 }

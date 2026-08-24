@@ -10,7 +10,10 @@
 import { readFile, stat } from "node:fs/promises";
 import { cookieHeader, readBoundedText } from "./live.js";
 import { amazonNavigateHeaders } from "./httpHeaders.js";
-import { assertTrustedAmazonUrl, TRUSTED_AMAZON_ORIGIN } from "./trustedAmazon.js";
+import {
+  assertTrustedAmazonUrl,
+  TRUSTED_AMAZON_ORIGIN,
+} from "./trustedAmazon.js";
 import { parseWishlistHtml, type WishlistItem } from "../parsers/wishlist.js";
 
 const MAX_FIXTURE_BYTES = 8 * 1024 * 1024;
@@ -27,10 +30,18 @@ export interface WishlistListHttpOptions {
 }
 
 function validateOptions(opts: WishlistListHttpOptions): void {
-  if (opts.maxPages !== undefined && (!Number.isInteger(opts.maxPages) || opts.maxPages < 1 || opts.maxPages > 100)) {
+  if (
+    opts.maxPages !== undefined &&
+    (!Number.isInteger(opts.maxPages) ||
+      opts.maxPages < 1 ||
+      opts.maxPages > 100)
+  ) {
     throw new Error("maxPages must be an integer from 1 through 100");
   }
-  if (opts.limit !== undefined && (!Number.isInteger(opts.limit) || opts.limit < 1 || opts.limit > 5_000)) {
+  if (
+    opts.limit !== undefined &&
+    (!Number.isInteger(opts.limit) || opts.limit < 1 || opts.limit > 5_000)
+  ) {
     throw new Error("limit must be an integer from 1 through 5000");
   }
 }
@@ -39,7 +50,8 @@ function resolveListUrl(opts: WishlistListHttpOptions): string {
   if (opts.url) return assertTrustedAmazonUrl(opts.url).toString();
   const id = opts.listId || process.env.AMAZON_WISHLIST_ID;
   if (id) {
-    if (!/^[A-Za-z0-9_-]{6,80}$/.test(id)) throw new Error("invalid Amazon wishlist id");
+    if (!/^[A-Za-z0-9_-]{6,80}$/.test(id))
+      throw new Error("invalid Amazon wishlist id");
     return `${TRUSTED_AMAZON_ORIGIN}/hz/wishlist/ls/${encodeURIComponent(id)}?sort=date-added&viewType=list`;
   }
   return `${TRUSTED_AMAZON_ORIGIN}/hz/wishlist/ls?sort=date-added&viewType=list`;
@@ -50,7 +62,10 @@ function normalizePaginationUrl(value: string, base: string): string {
 }
 
 /** Pull showMoreUrl / paginationToken from list HTML or JSON fragment. */
-export function extractShowMoreUrl(html: string, base = TRUSTED_AMAZON_ORIGIN): string | null {
+export function extractShowMoreUrl(
+  html: string,
+  base = TRUSTED_AMAZON_ORIGIN,
+): string | null {
   const patterns = [
     /"showMoreUrl"\s*:\s*"([^"]+)"/i,
     /name="showMoreUrl"\s+value="([^"]+)"/i,
@@ -74,7 +89,10 @@ async function getHtml(
 ): Promise<{ status: number; text: string; location: string | null }> {
   const url = assertTrustedAmazonUrl(value);
   const cookie = withCookie ? cookieHeader() || "" : "";
-  const headers = amazonNavigateHeaders(cookie, `${TRUSTED_AMAZON_ORIGIN}/hz/wishlist/ls`);
+  const headers = amazonNavigateHeaders(
+    cookie,
+    `${TRUSTED_AMAZON_ORIGIN}/hz/wishlist/ls`,
+  );
   if (!cookie) delete headers.cookie;
   const res = await fetch(url, {
     method: "GET",
@@ -86,18 +104,29 @@ async function getHtml(
   if (location && res.status >= 300 && res.status < 400) {
     const redirect = new URL(location, url);
     if (redirect.origin !== TRUSTED_AMAZON_ORIGIN) {
-      throw new Error(`wishlist returned a cross-origin redirect to ${redirect.origin}`);
+      throw new Error(
+        `wishlist returned a cross-origin redirect to ${redirect.origin}`,
+      );
     }
   }
   return { status: res.status, text: await readBoundedText(res), location };
 }
 
-function isSignInRedirect(result: { status: number; location: string | null }): boolean {
-  return result.status >= 300 && result.status < 400 && /\/ap\/signin/i.test(result.location || "");
+function isSignInRedirect(result: {
+  status: number;
+  location: string | null;
+}): boolean {
+  return (
+    result.status >= 300 &&
+    result.status < 400 &&
+    /\/ap\/signin/i.test(result.location || "")
+  );
 }
 
 function mergeItems(into: WishlistItem[], page: WishlistItem[]): number {
-  const seen = new Set(into.map((item) => item.asin || item.title || "").filter(Boolean));
+  const seen = new Set(
+    into.map((item) => item.asin || item.title || "").filter(Boolean),
+  );
   let added = 0;
   for (const item of page) {
     const key = item.asin || item.title || "";
@@ -112,7 +141,8 @@ function mergeItems(into: WishlistItem[], page: WishlistItem[]): number {
 async function readFixture(path: string): Promise<string> {
   const info = await stat(path);
   if (!info.isFile()) throw new Error("wishlist fixture must be a file");
-  if (info.size > MAX_FIXTURE_BYTES) throw new Error(`wishlist fixture exceeded ${MAX_FIXTURE_BYTES} bytes`);
+  if (info.size > MAX_FIXTURE_BYTES)
+    throw new Error(`wishlist fixture exceeded ${MAX_FIXTURE_BYTES} bytes`);
   return readFile(path, "utf8");
 }
 
@@ -131,7 +161,8 @@ export async function executeWishlistListHttp(
   validateOptions(opts);
   if (opts.fixture) {
     const page = parseWishlistHtml(await readFixture(opts.fixture));
-    const items = opts.limit === undefined ? page.items : page.items.slice(0, opts.limit);
+    const items =
+      opts.limit === undefined ? page.items : page.items.slice(0, opts.limit);
     return {
       listName: page.listName,
       listUrl: "<fixture>",
@@ -140,7 +171,8 @@ export async function executeWishlistListHttp(
       via: "http",
       sessionMode: "public",
       truncated: items.length < page.items.length,
-      terminationReason: items.length < page.items.length ? "item-cap" : "complete",
+      terminationReason:
+        items.length < page.items.length ? "item-cap" : "complete",
     };
   }
 
@@ -167,10 +199,13 @@ export async function executeWishlistListHttp(
   let next = page.showMoreUrl
     ? normalizePaginationUrl(page.showMoreUrl, listUrl)
     : extractShowMoreUrl(first.text, listUrl) ||
-      (page.nextPageUrl ? normalizePaginationUrl(page.nextPageUrl, listUrl) : null);
+      (page.nextPageUrl
+        ? normalizePaginationUrl(page.nextPageUrl, listUrl)
+        : null);
   let pagesFetched = 1;
   let truncated = false;
-  let terminationReason: "complete" | "item-cap" | "page-cap" | "repeated-page" = "complete";
+  let terminationReason:
+    "complete" | "item-cap" | "page-cap" | "repeated-page" = "complete";
   const seenPages = new Set([listUrl]);
 
   while (next && pagesFetched < maxPages) {
@@ -190,15 +225,23 @@ export async function executeWishlistListHttp(
       withCookie = false;
       more = await getHtml(next, false);
     }
-    if (more.status >= 300 && more.status < 400) throw new Error(`wishlist pagination redirect ${more.status}`);
-    if (more.status < 200 || more.status >= 300) throw new Error(`wishlist pagination returned HTTP ${more.status}`);
+    if (more.status >= 300 && more.status < 400)
+      throw new Error(`wishlist pagination redirect ${more.status}`);
+    if (more.status < 200 || more.status >= 300)
+      throw new Error(`wishlist pagination returned HTTP ${more.status}`);
 
     let html = more.text;
     let jsonNext: string | null = null;
     try {
-      const json = JSON.parse(more.text) as { html?: string; itemsHtml?: string; showMoreUrl?: string };
-      if (json.html || json.itemsHtml) html = String(json.html || json.itemsHtml);
-      if (json.showMoreUrl) jsonNext = normalizePaginationUrl(json.showMoreUrl, next);
+      const json = JSON.parse(more.text) as {
+        html?: string;
+        itemsHtml?: string;
+        showMoreUrl?: string;
+      };
+      if (json.html || json.itemsHtml)
+        html = String(json.html || json.itemsHtml);
+      if (json.showMoreUrl)
+        jsonNext = normalizePaginationUrl(json.showMoreUrl, next);
     } catch {
       // Plain HTML fragment.
     }
@@ -206,8 +249,12 @@ export async function executeWishlistListHttp(
     if (!listName && fragment.listName) listName = fragment.listName;
     const added = mergeItems(items, fragment.items);
     pagesFetched += 1;
-    const following = jsonNext || extractShowMoreUrl(html, next) ||
-      (fragment.nextPageUrl ? normalizePaginationUrl(fragment.nextPageUrl, next) : null);
+    const following =
+      jsonNext ||
+      extractShowMoreUrl(html, next) ||
+      (fragment.nextPageUrl
+        ? normalizePaginationUrl(fragment.nextPageUrl, next)
+        : null);
     if (!following || added === 0) {
       next = null;
       if (following && added === 0) terminationReason = "repeated-page";

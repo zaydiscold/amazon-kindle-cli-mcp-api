@@ -20,7 +20,10 @@ describe("CLI ↔ MCP capability parity", () => {
         full.has(capability.mcpTool),
         `${capability.key} missing MCP tool ${capability.mcpTool}`,
       ).toBe(true);
-      expect(capability.cli, `${capability.key} must have a CLI command`).not.toBeNull();
+      expect(
+        capability.cli,
+        `${capability.key} must have a CLI command`,
+      ).not.toBeNull();
     }
   });
 
@@ -35,7 +38,10 @@ describe("CLI ↔ MCP capability parity", () => {
     const read = toolsForProfile("read");
     for (const capability of CAPABILITIES) {
       if (!read.has(capability.mcpTool)) continue;
-      expect(capability.readOnly, `${capability.mcpTool} must be read-only`).toBe(true);
+      expect(
+        capability.readOnly,
+        `${capability.mcpTool} must be read-only`,
+      ).toBe(true);
     }
     expect(() => parseMcpProfile("typo")).toThrow("must be one of");
   });
