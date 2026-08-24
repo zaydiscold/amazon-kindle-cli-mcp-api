@@ -11,6 +11,6 @@ if [ -f "$AUTH_FILE" ]; then
   set +a
 fi
 if [ ! -f "$ROOT/mcp/dist/server.js" ]; then
-  (cd "$ROOT" && corepack pnpm build) 1>&2
+  (cd "$ROOT" && pnpm build) 1>&2
 fi
 exec "${AMAZON_KINDLE_NODE_BIN:-node}" "$ROOT/mcp/dist/server.js" "$@"

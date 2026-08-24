@@ -17,7 +17,7 @@ photo / title / EPUB
 | Amazon Wishlist → CLI | live | signed-in cookie + parsed Shopping List |
 | Goodreads to-read → RSS | live | user `179929687`, 100-item RSS page |
 | Amazon ⇄ Goodreads parity | live | title/author normalized diff |
-| EPUB → Kindle web upload | live | `A_Parade_of_Horribles_-_Matt_Dinniman.epub`; init → signed PUT → send-v2 returned `status:true`; recent docs showed `IN_PROGRESS` |
+| EPUB → Kindle web upload | live | HTTP init → signed PUT → send-v2, with receipt verification through `kindle recent` |
 | EPUB → Kindle email | ready | needs SMTP config + approved sender |
 | MYCD purchased ebooks / Personal Documents → CLI | experimental, fixture-verified | synthetic shell/AJAX fixtures only; not authenticated-live-verified |
 | photo/text → add plan | ready | `books resolve` creates Amazon search + Goodreads resolved-id plan |
@@ -63,7 +63,3 @@ amazon-kindle-cli kindle pdocs --limit 100
 ## MYCD inventory status
 
 `kindle books` and `kindle pdocs` use an HTTP-only shell-CSRF → ownership-AJAX contract. They are **experimental and fixture-verified only**: no authenticated account-backed live proof is claimed. They emit bounded metadata, never cookies, CSRF, document bytes, or action/download URLs. `kindle recent` remains a separately live-proven Send-to-Kindle receipt view, not a full Personal Document inventory.
-
-## Kindle addresses discovered
-
-Manage Your Content exposes four `@kindle.com` addresses. They are stored locally in `~/.amazon/config.json`; do not expose them in public docs or commit them.

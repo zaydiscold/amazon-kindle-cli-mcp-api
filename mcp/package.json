@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "pretest": "corepack pnpm --filter @zaydiscold/amazon-kindle-cli build && corepack pnpm build",
+    "pretest": "pnpm --filter @zaydiscold/amazon-kindle-cli build && pnpm build",
     "test": "vitest run test"
   },
   "dependencies": {

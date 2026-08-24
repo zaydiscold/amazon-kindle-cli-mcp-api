@@ -30,22 +30,14 @@ Wait 5 seconds, verify the JSON response has `webSocketDebuggerUrl`.
 Use the Python script from the debug profile — NOT raw CUA clicks. Playwright handles the DOM better than AX tree for complex Amazon forms.
 
 ```bash
-python "$env:LOCALAPPDATA/amazon-kindle-debug-profile/brave_amazon_login.py" --email coldz3@yahoo.com --password '<secret>'
+# Navigate to Amazon sign-in, then complete credentials and OTP manually in Brave.
+python "$LOCALAPPDATA/amazon-kindle-debug-profile/brave_amazon_login.py" --goto-signin
+
+# After the signed-in page has loaded, capture only Amazon.com-origin cookies.
+python "$LOCALAPPDATA/amazon-kindle-debug-profile/brave_amazon_login.py" --cookies-only
 ```
 
-The script:
-
-1. Navigates to sign-in
-2. Fills email and password
-3. Waits for OTP challenge
-4. Pauses — **ask Zayd for the OTP code**
-5. Once code is provided:
-
-```bash
-python .../brave_amazon_login.py --otp 123456
-```
-
-The script then:
+The capture helper then:
 
 - Cancels any passkey save prompt
 - Dumps all amazon.com cookies to `~/.amazon/auth.sh`
@@ -55,8 +47,7 @@ The script then:
 ## Verify
 
 ```bash
-source ~/.amazon/auth.sh
-amazon-kindle-cli doctor          # expect signedInHint=true
+amazon-kindle-cli auth verify     # proves retail + Send-to-Kindle surfaces
 amazon-kindle-cli wishlist list   # expect parsed items
 amazon-kindle-cli kindle recent   # expect doc list
 ```
@@ -66,7 +57,8 @@ amazon-kindle-cli kindle recent   # expect doc list
 - Do NOT try to decrypt Chrome cookies from an agent shell (ABE/DPAPI will fail)
 - Do NOT rely on Chrome main profile port 9222
 - Do NOT print cookie values, CSRF tokens, OTPs, customer IDs, device emails, or signed upload URLs
-- Do NOT claim success from HTTP 200 alone — verify `signedInHint=true`
+- Do NOT pass account secrets or OTPs on a command line.
+- Do NOT claim success from HTTP 200 alone — use `auth verify` and the command-specific read result.
 
 ## Related reference
 
