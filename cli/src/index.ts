@@ -6,23 +6,21 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 function loadAuthFile(): void {
-  const p =
+  const path =
     process.env.AMAZON_AUTH_FILE ||
-    resolve(
-      process.env.USERPROFILE || process.env.HOME || "",
-      ".amazon/auth.sh",
-    );
+    resolve(process.env.USERPROFILE || process.env.HOME || "", ".amazon/auth.sh");
   try {
-    const text = readFileSync(p, "utf8");
+    const text = readFileSync(path, "utf8");
     for (const line of text.split(/\r?\n/)) {
-      const m = line.match(/^export\s+([A-Z0-9_]+)='(.*)'\s*$/);
-      if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
-      const m2 = line.match(/^export\s+([A-Z0-9_]+)=(.*)$/);
-      if (m2 && !process.env[m2[1]])
-        process.env[m2[1]] = m2[2].replace(/^["']|["']$/g, "");
+      const quoted = line.match(/^export\s+([A-Z0-9_]+)='(.*)'\s*$/);
+      if (quoted?.[1] && !process.env[quoted[1]]) process.env[quoted[1]] = quoted[2];
+      const plain = line.match(/^export\s+([A-Z0-9_]+)=(.*)$/);
+      if (plain?.[1] && !process.env[plain[1]]) {
+        process.env[plain[1]] = plain[2]?.replace(/^["']|["']$/g, "");
+      }
     }
   } catch {
-    /* optional */
+    // Optional local auth file.
   }
   if (!process.env.AMAZON_COOKIE && process.env.AMAZON_COOKIES) {
     process.env.AMAZON_COOKIE = process.env.AMAZON_COOKIES;
@@ -32,12 +30,8 @@ function loadAuthFile(): void {
 loadAuthFile();
 
 function positiveLimit(value: string): number {
-  if (
-    !/^\d+$/.test(value) ||
-    Number(value) < 1 ||
-    !Number.isSafeInteger(Number(value))
-  ) {
-    throw new Error("--limit must be a positive integer");
+  if (!/^\d+$/.test(value) || Number(value) < 1 || !Number.isSafeInteger(Number(value))) {
+    throw new Error("value must be a positive integer");
   }
   return Number(value);
 }
@@ -45,171 +39,132 @@ function positiveLimit(value: string): number {
 const program = new Command();
 program
   .name("amazon-kindle-cli")
-  .description(
-    "Kindle-first Amazon CLI + MCP — HTTP/scriptable only (auth capture is separate)",
-  )
+  .version("0.3.0")
+  .description("Kindle-first Amazon CLI + MCP using scriptable HTTP product paths")
   .option("--json", "JSON output", true);
 
-program
-  .command("doctor")
-  .action(async () => printJson(await engine.doctor(), true));
+program.command("doctor").action(async () => printJson(await engine.doctor(), true));
 
 const auth = program.command("auth").description("Amazon session auth");
-auth
-  .command("status")
-  .action(async () => printJson(await engine.authStatus(), true));
+auth.command("status").action(async () => printJson(await engine.authStatus(), true));
 auth
   .command("verify")
-  .description(
-    "Verify the persisted session against both Amazon retail and Kindle HTTP surfaces",
-  )
+  .description("Verify the persisted session against Amazon retail and Kindle HTTP surfaces")
   .option("--list-id <id>", "Wishlist id (or AMAZON_WISHLIST_ID)")
-  .action(async (opts) =>
-    printJson(await engine.authVerify({ listId: opts.listId }), true),
-  );
+  .action(async (options) => printJson(await engine.authVerify({ listId: options.listId }), true));
 auth
   .command("import")
-  .requiredOption(
-    "--file <path>",
-    "Cookie-Editor JSON / Netscape / raw Cookie header / PP portable JSON",
-  )
-  .action(async (opts) =>
-    printJson(await engine.authImport({ file: opts.file }), true),
-  );
+  .requiredOption("--file <path>", "Cookie-Editor JSON, Netscape cookies, or raw Cookie header")
+  .action(async (options) => printJson(await engine.authImport({ file: options.file }), true));
 
-const wishlist = program
-  .command("wishlist")
-  .description("Amazon wish lists (HTTP)");
+const wishlist = program.command("wishlist").description("Amazon wish lists over HTTP");
 wishlist
   .command("list")
-  .description(
-    "List wishlist items via HTTP + slv/items pagination (no browser scroll)",
-  )
-  .option("--url <url>", "Wishlist URL")
+  .description("List wishlist items through bounded HTTP pagination")
+  .option("--url <url>", "Amazon wishlist URL")
   .option("--list-id <id>", "Wishlist id (or AMAZON_WISHLIST_ID)")
-  .option("--max-pages <n>", "Max pagination hops", "40")
+  .option("--max-pages <n>", "Maximum pagination pages", positiveLimit, 40)
   .option("--limit <n>", "Maximum items to return", positiveLimit)
   .option("--fixture <path>", "Local HTML fixture")
-  .action(async (opts) =>
+  .action(async (options) =>
     printJson(
       await engine.wishlistList({
-        url: opts.url,
-        listId: opts.listId,
-        fixture: opts.fixture,
-        maxPages: Number(opts.maxPages) || 40,
-        limit: opts.limit,
+        url: options.url,
+        listId: options.listId,
+        fixture: options.fixture,
+        maxPages: options.maxPages,
+        limit: options.limit,
       }),
       true,
     ),
   );
 wishlist
   .command("add")
-  .description("Add ASIN via POST /hz/wishlist/additemtolist (dry-run default)")
+  .description("Preview or add an exact ASIN through POST /hz/wishlist/additemtolist")
   .option("--asin <asin>")
+  .option("--title <title>", "Title to resolve when ASIN is omitted")
+  .option("--author <author>", "Optional author for title resolution")
+  .option("--list-name <name>", "Resolve a named wishlist")
+  .option("--list-id <id>", "Wishlist id (or AMAZON_WISHLIST_ID)")
+  .option("--approved-asin <asin>", "Exact ASIN emitted by the preview")
   .option(
-    "--title <title>",
-    "Title to resolve to an Amazon ASIN when --asin is omitted",
+    "--approved-list-id <id>",
+    "Exact list id emitted by the preview, or <default-list> when no list id is used",
   )
-  .option(
-    "--author <author>",
-    "Optional author to disambiguate title resolution",
-  )
-  .option(
-    "--list-name <name>",
-    "Resolve a named wishlist when --list-id is omitted",
-  )
-  .option("--list-id <id>", "Wishlist id (default AMAZON_WISHLIST_ID)")
   .option("--execute", "Actually mutate the list", false)
-  .action(async (opts) =>
+  .action(async (options) =>
     printJson(
       await engine.wishlistAdd({
-        asin: opts.asin,
-        title: opts.title,
-        author: opts.author,
-        listName: opts.listName,
-        listId: opts.listId,
-        execute: Boolean(opts.execute),
+        asin: options.asin,
+        title: options.title,
+        author: options.author,
+        listName: options.listName,
+        listId: options.listId,
+        approvedAsin: options.approvedAsin,
+        approvedListId: options.approvedListId,
+        execute: Boolean(options.execute),
       }),
       true,
     ),
   );
 
-const kindle = program
-  .command("kindle")
-  .description("Kindle delivery + library (HTTP)");
+const kindle = program.command("kindle").description("Kindle delivery and library reads");
 kindle
   .command("send")
-  .description("Send EPUB/PDF to Kindle via web upload (default) or email SMTP")
+  .description("Preview or send EPUB/PDF files through web upload or email SMTP")
   .argument("<files...>", "Files to send")
-  .option("--via <path>", "web | email", "web")
-  .option("--kindle-email <email>", "you_xxx@kindle.com (email path)")
-  .option("--archive", "Add to library (web path)", true)
-  .option("--execute", "Actually send (default dry-run)", false)
+  .option("--via <path>", "web or email", "web")
+  .option("--kindle-email <email>", "Kindle address for the email path")
+  .option("--archive", "Add to library on the web path", true)
+  .option(
+    "--approved-file-sha256 <hash...>",
+    "Exact SHA-256 values emitted by the preview, one for each file",
+  )
+  .option("--execute", "Actually send", false)
   .option("--dry-run", "Force plan only", false)
-  .action(async (files, opts) => {
-    if (opts.via === "browser") {
-      throw new Error(
-        "browser send path removed — use --via web (HTTP) or --via email",
-      );
+  .action(async (files, options) => {
+    if (options.via === "browser") {
+      throw new Error("browser send is not a product transport; use web or email");
     }
-    const via = opts.via === "email" ? "email" : "web";
-    const fn =
-      opts.execute && !opts.dryRun ? engine.kindleSend : engine.kindleSendPlan;
+    const via = options.via === "email" ? "email" : "web";
+    const operation =
+      options.execute && !options.dryRun ? engine.kindleSend : engine.kindleSendPlan;
     printJson(
-      await fn({
+      await operation({
         files,
         via,
-        kindleEmail: opts.kindleEmail,
-        execute: opts.execute,
-        dryRun: opts.dryRun,
-        archive: opts.archive,
+        kindleEmail: options.kindleEmail,
+        execute: options.execute,
+        dryRun: options.dryRun,
+        archive: options.archive,
+        approvedFileSha256: options.approvedFileSha256,
       }),
       true,
     );
   });
 kindle
   .command("recent")
-  .description(
-    "Recent Send-to-Kindle receipts, not the full personal-document inventory",
-  )
-  .option("--limit <n>", "Maximum receipts to return", positiveLimit)
-  .action(async (opts) =>
-    printJson(await engine.kindleRecent({ limit: opts.limit }), true),
-  );
+  .description("Recent Send-to-Kindle receipts, not the full personal-document inventory")
+  .option("--limit <n>", "Maximum receipts", positiveLimit)
+  .action(async (options) => printJson(await engine.kindleRecent({ limit: options.limit }), true));
 kindle
   .command("books")
-  .description("List purchased Kindle Ebook metadata via MYCD AJAX")
-  .option("--limit <n>", "Maximum items to return", positiveLimit)
-  .option(
-    "--fixture <path>",
-    "Synthetic JSON/HTML fixture for deterministic parser tests",
-  )
-  .action(async (opts) =>
-    printJson(
-      await engine.kindleBooks({ limit: opts.limit, fixture: opts.fixture }),
-      true,
-    ),
+  .description("List purchased Kindle Ebook metadata through MYCD")
+  .option("--limit <n>", "Maximum items", positiveLimit)
+  .option("--fixture <path>", "Synthetic fixture for deterministic parsing")
+  .action(async (options) =>
+    printJson(await engine.kindleBooks({ limit: options.limit, fixture: options.fixture }), true),
   );
 kindle
   .command("pdocs")
-  .description(
-    "List Personal Document metadata via MYCD AJAX; not recent receipts",
-  )
-  .option("--limit <n>", "Maximum items to return", positiveLimit)
-  .option(
-    "--fixture <path>",
-    "Synthetic JSON/HTML fixture for deterministic parser tests",
-  )
-  .action(async (opts) =>
-    printJson(
-      await engine.kindlePdocs({ limit: opts.limit, fixture: opts.fixture }),
-      true,
-    ),
+  .description("List Personal Document metadata through MYCD")
+  .option("--limit <n>", "Maximum items", positiveLimit)
+  .option("--fixture <path>", "Synthetic fixture for deterministic parsing")
+  .action(async (options) =>
+    printJson(await engine.kindlePdocs({ limit: options.limit, fixture: options.fixture }), true),
   );
 
-const content = program
-  .command("content")
-  .description("Manage Your Content probes");
+const content = program.command("content").description("Manage Your Content probes");
 content
   .command("devices")
   .description("Probe Manage Your Content digital console")
@@ -220,21 +175,21 @@ sync
   .command("goodreads-plan")
   .option("--fixture <path>")
   .option("--url <url>")
-  .option("--list-id <id>", "Amazon wishlist id (or AMAZON_WISHLIST_ID)")
-  .option("--user <id>", "Goodreads user id")
+  .option("--list-id <id>", "Amazon wishlist id")
+  .option("--user <id>", "Goodreads user id; no personal fallback is used")
   .option(
     "--direction <dir>",
-    "amazon-to-goodreads | goodreads-to-amazon | both",
+    "amazon-to-goodreads, goodreads-to-amazon, or both",
     "both",
   )
-  .action(async (opts) =>
+  .action(async (options) =>
     printJson(
       await engine.goodreadsSyncPlan({
-        wishlistUrl: opts.url,
-        listId: opts.listId,
-        fixture: opts.fixture,
-        userId: opts.user,
-        direction: opts.direction,
+        wishlistUrl: options.url,
+        listId: options.listId,
+        fixture: options.fixture,
+        userId: options.user,
+        direction: options.direction,
       }),
       true,
     ),
@@ -242,47 +197,42 @@ sync
 
 program
   .command("parity")
-  .description("Diff Amazon wishlist (HTTP full page walk) vs Goodreads shelf")
-  .option("--user <id>", "Goodreads user id")
+  .description("Diff an Amazon wishlist against an explicit Goodreads shelf/account")
+  .option("--user <id>", "Goodreads user id; no personal fallback is used")
   .option("--shelf <slug>", "Goodreads shelf", "to-read")
   .option("--fixture <path>")
   .option("--url <url>")
   .option("--list-id <id>")
-  .action(async (opts) =>
+  .action(async (options) =>
     printJson(
       await engine.parityCheck({
-        userId: opts.user,
-        shelf: opts.shelf,
-        fixture: opts.fixture,
-        wishlistUrl: opts.url,
-        listId: opts.listId,
+        userId: options.user,
+        shelf: options.shelf,
+        fixture: options.fixture,
+        wishlistUrl: options.url,
+        listId: options.listId,
       }),
       true,
     ),
   );
 
-const books = program
-  .command("books")
-  .description("Resolve titles/photos into add plans");
+const books = program.command("books").description("Resolve titles or photos into add plans");
 books
   .command("resolve")
-  .option("--title <t>")
-  .option("--author <a>")
+  .option("--title <title>")
+  .option("--author <author>")
   .option("--asin <asin>")
-  .option("--text <ocr>", "Freeform OCR/vision text")
-  .action(async (opts) => printJson(await engine.booksResolve(opts), true));
+  .option("--text <ocr>", "Freeform OCR or vision text")
+  .action(async (options) => printJson(await engine.booksResolve(options), true));
 
 program
   .command("add-plan")
-  .description("Plan multi-surface add (Goodreads + Amazon + Kindle)")
-  .option("--title <t>")
-  .option("--author <a>")
+  .description("Plan a multi-surface Goodreads, Amazon, and Kindle add")
+  .option("--title <title>")
+  .option("--author <author>")
   .option("--asin <asin>")
   .option("--text <ocr>")
-  .option(
-    "--targets <target...>",
-    "Plan only for selected destinations: goodreads, amazon, kindle",
-  )
-  .action(async (opts) => printJson(await engine.addPlan(opts), true));
+  .option("--targets <target...>", "goodreads, amazon, kindle")
+  .action(async (options) => printJson(await engine.addPlan(options), true));
 
 program.parseAsync(process.argv);
