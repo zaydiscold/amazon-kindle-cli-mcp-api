@@ -279,6 +279,10 @@ program
   .option("--author <a>")
   .option("--asin <asin>")
   .option("--text <ocr>")
+  .option(
+    "--targets <target...>",
+    "Plan only for selected destinations: goodreads, amazon, kindle",
+  )
   .action(async (opts) => printJson(await engine.addPlan(opts), true));
 
 program.parseAsync(process.argv);

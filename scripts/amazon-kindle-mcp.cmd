@@ -5,7 +5,7 @@ if exist "%AUTH_FILE%" call "%AUTH_FILE%" >nul 2>&1
 set "ROOT=%~dp0.."
 if not exist "%ROOT%\mcp\dist\server.js" (
   pushd "%ROOT%"
-  call corepack pnpm build 1>&2
+  call pnpm build 1>&2
   popd
 )
 node "%ROOT%\mcp\dist\server.js" %*

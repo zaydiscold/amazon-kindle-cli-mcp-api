@@ -53,13 +53,13 @@ The helper writes:
 ## Validate every time
 
 ```bash
-source ~/.amazon/auth.sh
-amazon-kindle-cli doctor
+amazon-kindle-cli auth status
+amazon-kindle-cli auth verify
 amazon-kindle-cli wishlist list
 amazon-kindle-cli kindle recent
 ```
 
-`doctor.live.status=200` plus `signedInHint=true` is required before claiming auth is good.
+The CLI auto-loads `~/.amazon/auth.sh`; do not require users to source it. `auth status` is metadata only. Treat `auth verify` as the proof for retail and Send-to-Kindle HTTP surfaces, then use the command-specific read result to confirm the intended workflow.
 
 ## Send-to-Kindle product route
 
@@ -77,7 +77,7 @@ Use CDP only to refresh the origin-scoped buyer session or research a new contra
 | finalize | `POST /sendtokindle/send-v2` |
 | receipt | `GET /sendtokindle/recent-docs` |
 
-**Live proof:** `A_Parade_of_Horribles_-_Matt_Dinniman.epub` (2,891,674 bytes) was uploaded; `send-v2` returned `{status:true}`; `recent-docs` then reached `IN_LIBRARY`.
+**Verification rule:** a successful `send-v2` response is not delivery proof. Confirm the matching `kindle recent` receipt reaches `IN_LIBRARY` or `COMPLETE`.
 
 Never call the web executor twice just to "test" it. Test with plans; verify existing receipts.
 

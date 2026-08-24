@@ -91,11 +91,6 @@ amazon-kindle-cli wishlist add --asin BXXXXXXXXX --execute
 # Goodreads: use goodreads-cli shelf add with its own auth
 ```
 
-## Proven artifact
-
-`C:\Users\ZaydK\Desktop\A_Parade_of_Horribles_-_Matt_Dinniman.epub`
-was sent via Amazon web upload and verified `IN_LIBRARY` by `kindle recent`.
-
 ## Amazon Orders interoperability
 
 The Amazon session is compatible with the Printing Press order CLI:

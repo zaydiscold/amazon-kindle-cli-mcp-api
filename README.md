@@ -43,7 +43,7 @@ amazon-kindle-cli auth verify
 doctor
 auth status | verify [--list-id] | import --file
 wishlist list [--url | --list-id] [--max-pages N] [--limit N]
-wishlist add --asin ASIN | --title TITLE [--author AUTHOR] [--list-id ID] [--execute]
+wishlist add --asin ASIN | --title TITLE [--author AUTHOR] [--list-name NAME | --list-id ID] [--execute]
 kindle send <files...> [--via web|email] [--execute]
 kindle books [--limit N]
 kindle pdocs [--limit N]
@@ -52,7 +52,7 @@ content devices
 parity [--user] [--shelf]
 sync goodreads-plan [--direction both]
 books resolve --title|--text
-add-plan --title|--text
+add-plan --title|--text [--targets goodreads amazon kindle]
 ```
 
 ## MCP tools

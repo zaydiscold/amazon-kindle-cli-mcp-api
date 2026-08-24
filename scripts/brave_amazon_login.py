@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
-"""Drive Amazon login on Brave CDP :9333, then dump amazon cookies to ~/.amazon/auth.sh.
+"""Navigate Amazon sign-in and capture cookies through Brave CDP :9333.
 
-Usage:
-  python brave_amazon_login.py              # navigate to sign-in, wait for manual OTP
-  python brave_amazon_login.py --email X --password Y
-  python brave_amazon_login.py --otp 123456
-  python brave_amazon_login.py --cookies-only
+Complete credentials and any OTP interactively in Brave. Use --goto-signin to
+navigate, then --cookies-only to persist Amazon.com-origin cookies locally.
 """
 from __future__ import annotations
 
