@@ -1,9 +1,9 @@
 {
   "name": "@zaydiscold/amazon-kindle-mcp",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
-  "description": "MCP server for amazon-kindle-cli engine",
+  "description": "Repository-local MCP server for the HTTP-first Amazon and Kindle CLI engine.",
   "bin": {
     "amazon-kindle-mcp": "dist/server.js"
   },
@@ -25,6 +25,10 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zaydiscold/amazon-kindle-cli-mcp-api.git"
   },
   "author": "Zayd Khan (@ColdCooks / zaydiscold)",
   "license": "MIT"
