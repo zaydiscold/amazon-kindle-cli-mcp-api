@@ -8,7 +8,7 @@ export function normalizeAsin(value: string): string {
 }
 
 export function wishlistApprovalTarget(listId: string | undefined): string {
-  return listId?.trim() || "<default-list>";
+  return listId?.trim() || "<unresolved-list-id>";
 }
 
 export function requireExactApproval(
@@ -16,8 +16,14 @@ export function requireExactApproval(
   actual: string,
   approved: string | undefined,
 ): void {
-  if (!approved?.trim())
+  if (actual.startsWith("<") && actual.endsWith(">")) {
+    throw new Error(
+      `${label} cannot approve an unresolved target; supply or resolve the exact value before execute`,
+    );
+  }
+  if (!approved?.trim()) {
     throw new Error(`${label} approval is required for execute`);
+  }
   if (approved.trim() !== actual) throw new Error(`${label} approval mismatch`);
 }
 
