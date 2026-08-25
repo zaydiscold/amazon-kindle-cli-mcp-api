@@ -43,8 +43,7 @@ const RULES = [
   },
   {
     id: "smtp-password-literal",
-    pattern:
-      /SMTP_(?:PASS|PASSWORD)\s*=\s*(["'])([^"'\n]{12,})\1/gi,
+    pattern: /SMTP_(?:PASS|PASSWORD)\s*=\s*(["'])([^"'\n]{12,})\1/gi,
     valueIndex: 2,
   },
   {
