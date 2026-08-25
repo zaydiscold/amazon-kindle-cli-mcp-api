@@ -37,12 +37,8 @@ jobs:
         if: matrix.node-version == 22
       - run: pnpm lint
         if: matrix.node-version == 22
-      - name: Print exact Prettier diff
+      - run: pnpm format:check
         if: matrix.node-version == 22
-        run: |
-          pnpm exec prettier --write mcp/test/pathPolicy.test.ts scripts/secret-scan.mjs
-          git diff -- mcp/test/pathPolicy.test.ts scripts/secret-scan.mjs
-          git diff --exit-code -- mcp/test/pathPolicy.test.ts scripts/secret-scan.mjs
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
