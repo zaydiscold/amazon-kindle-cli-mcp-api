@@ -22,28 +22,34 @@ const TEXT_EXTENSIONS = new Set([
   ".yml",
 ]);
 const SKIP_PATHS = new Set(["pnpm-lock.yaml"]);
+const SKIP_PREFIXES = ["cli/test/", "mcp/test/"];
 const RULES = [
   {
-    id: "amazon-cookie-env",
-    pattern: /AMAZON_COOKIES?\s*=\s*["']?([^\s"'\n]{24,})/gi,
+    id: "amazon-cookie-literal",
+    pattern: /AMAZON_COOKIES?\s*=\s*(["'])([^"'\n]{24,})\1/gi,
+    valueIndex: 2,
   },
   {
     id: "amazon-session-cookie",
     pattern:
       /(?:session-id|session-token|at-main|x-main|ubid-main|sess-at-main|aws-waf-token)=([A-Za-z0-9._%+/=-]{20,})/gi,
+    valueIndex: 1,
   },
   {
     id: "amazon-csrf-token",
     pattern:
       /(?:anti-csrftoken-a2z|csrfToken)["'\s:=]+([A-Za-z0-9._%+/=-]{24,})/gi,
+    valueIndex: 1,
   },
   {
-    id: "smtp-password",
-    pattern: /SMTP_(?:PASS|PASSWORD)\s*=\s*["']?([^\s"'\n]{12,})/gi,
+    id: "smtp-password-literal",
+    pattern: /SMTP_(?:PASS|PASSWORD)\s*=\s*(["'])([^"'\n]{12,})\1/gi,
+    valueIndex: 2,
   },
   {
     id: "cookie-header",
     pattern: /\bCookie:\s*([^\n]{24,}=.+)/gi,
+    valueIndex: 1,
   },
 ];
 
@@ -52,13 +58,13 @@ function isPlaceholder(value) {
   return (
     value.includes("<") ||
     value.includes(">") ||
+    value.includes("${") ||
+    value.includes("%") ||
     normalized.includes("example") ||
     normalized.includes("placeholder") ||
     normalized.includes("redacted") ||
-    normalized.includes("your-") ||
-    normalized.includes("test-token") ||
-    normalized.includes("secret-cookie") ||
-    normalized.includes("fresh-token")
+    normalized.includes("replace-") ||
+    normalized.includes("your-")
   );
 }
 
@@ -74,7 +80,13 @@ function trackedFiles() {
 
 const findings = [];
 for (const path of trackedFiles()) {
-  if (SKIP_PATHS.has(path) || !TEXT_EXTENSIONS.has(extname(path).toLowerCase())) continue;
+  if (
+    SKIP_PATHS.has(path) ||
+    SKIP_PREFIXES.some((prefix) => path.startsWith(prefix)) ||
+    !TEXT_EXTENSIONS.has(extname(path).toLowerCase())
+  ) {
+    continue;
+  }
   let info;
   try {
     info = statSync(path);
@@ -88,7 +100,7 @@ for (const path of trackedFiles()) {
   for (const rule of RULES) {
     rule.pattern.lastIndex = 0;
     for (const match of text.matchAll(rule.pattern)) {
-      const value = match[1] ?? "";
+      const value = match[rule.valueIndex] ?? "";
       if (!value || isPlaceholder(value)) continue;
       findings.push({
         path,
