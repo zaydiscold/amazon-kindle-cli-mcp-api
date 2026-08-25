@@ -1,3 +1,7 @@
 packages:
   - "cli"
   - "mcp"
+
+overrides:
+  brace-expansion: 5.0.9
+  nanoid: 3.3.18

@@ -3,11 +3,6 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.12.1",
-  "pnpm": {
-    "overrides": {
-      "brace-expansion": "5.0.9"
-    }
-  },
   "scripts": {
     "build": "pnpm --filter @zaydiscold/amazon-kindle-cli build && pnpm --filter @zaydiscold/amazon-kindle-mcp build",
     "test": "pnpm --filter @zaydiscold/amazon-kindle-cli test && pnpm --filter @zaydiscold/amazon-kindle-mcp test && node scripts/test-python.mjs",
@@ -15,10 +10,13 @@
     "lint": "eslint cli/src cli/test mcp/src mcp/test",
     "format": "prettier --write cli/src cli/test mcp/src mcp/test scripts",
     "format:check": "prettier --check cli/src cli/test mcp/src mcp/test scripts",
+    "audit:security": "corepack pnpm@11.13.0 --pm-on-fail=ignore audit --audit-level moderate",
+    "secret:scan": "node scripts/secret-scan.mjs",
     "cli": "pnpm --filter @zaydiscold/amazon-kindle-cli cli",
     "mcp": "scripts/amazon-kindle-mcp.sh",
     "regression:recent": "pnpm --filter @zaydiscold/amazon-kindle-cli exec vitest run test/authVerify.test.ts test/wishlist.test.ts && node scripts/test-python.mjs && pnpm format:check",
-    "doctor": "node scripts/doctor.mjs"
+    "doctor": "node scripts/doctor.mjs",
+    "check": "pnpm audit:security && pnpm secret:scan && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@types/node": "^25.9.5",

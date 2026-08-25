@@ -1,19 +1,16 @@
 /**
  * Amazon wishlist add via pure HTTP (mapped 2026-08-01 via CDP on product page).
- *
- * Flow:
- *  1. GET  /dp/{ASIN}                         → anti-csrftoken-a2z (+ session)
- *  2. POST /hz/wishlist/additemtolist         → form-urlencoded asin + list
- *
- * Requires AMAZON_COOKIE. Dry-run by default (caller gates execute).
- * Browser path remains optional fallback only.
+ * Requires AMAZON_COOKIE. Dry-run by default; exact approval is enforced by the engine.
  */
-import { cookieHeader } from "./live.js";
+import { cookieHeader, readBoundedText } from "./live.js";
 import { amazonNavigateHeaders, amazonXhrHeaders } from "./httpHeaders.js";
+import {
+  assertTrustedAmazonUrl,
+  TRUSTED_AMAZON_ORIGIN,
+} from "./trustedAmazon.js";
 
 export interface WishlistHttpAddOptions {
   asin: string;
-  /** Default Shopping List id when known (e.g. 26C3QAASCFU8S). Optional. */
   listId?: string;
   listType?: "wishlist" | "idea-list";
   execute?: boolean;
@@ -26,10 +23,8 @@ function requireCookie(): string {
   return cookie;
 }
 
-/** Extract anti-csrftoken-a2z from a product or wishlist HTML page. */
 export function extractAntiCsrf(html: string): string | null {
   const patterns = [
-    // product wishlist form field (preferred — live-verified 2026-08-01)
     /id="addToWishListForm"[\s\S]{0,8000}?name="anti-csrftoken-a2z"\s+value="([^"]+)"/i,
     /name="anti-csrftoken-a2z"\s+value="([^"]+)"/i,
     /anti-csrftoken-a2z&quot;:&quot;([^&]+)/i,
@@ -38,14 +33,14 @@ export function extractAntiCsrf(html: string): string | null {
     /"csrfToken"\s*:\s*"([^"]+)"/i,
     /data-anti-csrftoken-a2z="([^"]+)"/i,
   ];
-  for (const re of patterns) {
-    const m = html.match(re);
-    if (m?.[1]) return m[1].replace(/\\u002F/g, "/").replace(/&quot;/g, '"');
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match?.[1])
+      return match[1].replace(/\\u002F/g, "/").replace(/&quot;/g, '"');
   }
   return null;
 }
 
-/** Parse additemtolist HTML for success / already-on-list. */
 export function parseAddItemResponse(html: string): {
   success: boolean;
   alreadyOnList: boolean;
@@ -60,36 +55,48 @@ export function parseAddItemResponse(html: string): {
     /view your list/i.test(html) ||
     /added to/i.test(html);
   const listMatch = html.match(/\/hz\/wishlist\/ls\/([A-Z0-9]{10,})/i);
-  const msgMatch =
+  const messageMatch =
     html.match(/huc-atwl-header-main[^>]*>([^<]+)/i) ||
     html.match(/a-size-medium-plus huc-atwl-header-main[^>]*>([^<]+)/i);
   return {
     success,
     alreadyOnList,
     listId: listMatch?.[1] || null,
-    message: msgMatch?.[1]?.trim() || null,
+    message: messageMatch?.[1]?.trim() || null,
   };
 }
 
 async function amazonGet(
-  url: string,
-): Promise<{ status: number; text: string; headers: Headers }> {
+  value: string,
+): Promise<{ status: number; text: string; location: string | null }> {
+  const url = assertTrustedAmazonUrl(value);
   const cookie = requireCookie();
-  const res = await fetch(url, {
+  const response = await fetch(url, {
     method: "GET",
-    headers: amazonNavigateHeaders(cookie, "https://www.amazon.com/"),
+    headers: amazonNavigateHeaders(cookie, `${TRUSTED_AMAZON_ORIGIN}/`),
     redirect: "manual",
     signal: AbortSignal.timeout(45_000),
   });
-  const text = await res.text();
-  return { status: res.status, text, headers: res.headers };
+  const location = response.headers.get("location");
+  if (location && response.status >= 300 && response.status < 400) {
+    const redirect = new URL(location, url);
+    if (redirect.origin !== TRUSTED_AMAZON_ORIGIN) {
+      throw new Error(
+        `Amazon returned a cross-origin redirect to ${redirect.origin}`,
+      );
+    }
+  }
+  return {
+    status: response.status,
+    text: await readBoundedText(response),
+    location,
+  };
 }
 
 export async function planWishlistHttpAdd(opts: WishlistHttpAddOptions) {
   const asin = opts.asin.trim().toUpperCase();
-  if (!/^[A-Z0-9]{10}$/.test(asin)) {
+  if (!/^[A-Z0-9]{10}$/.test(asin))
     throw new Error(`invalid ASIN: ${opts.asin}`);
-  }
   const dryRun = opts.dryRun || !opts.execute;
   return {
     dryRun,
@@ -122,7 +129,7 @@ export async function executeWishlistHttpAdd(opts: WishlistHttpAddOptions) {
   }
 
   const cookie = requireCookie();
-  const productUrl = `https://www.amazon.com/dp/${plan.asin}`;
+  const productUrl = `${TRUSTED_AMAZON_ORIGIN}/dp/${plan.asin}`;
   const product = await amazonGet(productUrl);
   if (product.status >= 300 && product.status < 400) {
     return {
@@ -130,34 +137,45 @@ export async function executeWishlistHttpAdd(opts: WishlistHttpAddOptions) {
       via: "http" as const,
       plan,
       ok: false,
-      error: "session redirect on product page — refresh AMAZON_COOKIE",
+      error: "session redirect on product page; refresh AMAZON_COOKIE",
       status: product.status,
       mutationVerified: false as const,
       verificationRequired: "re-auth then retry",
     };
   }
+  if (product.status < 200 || product.status >= 300) {
+    return {
+      submitted: false,
+      via: "http" as const,
+      plan,
+      ok: false,
+      error: `product page returned HTTP ${product.status}; response body omitted`,
+      status: product.status,
+      mutationVerified: false as const,
+      verificationRequired: "verify ASIN and authentication before retrying",
+    };
+  }
 
   const csrf = extractAntiCsrf(product.text);
   if (!csrf) {
-    // try wishlist page as secondary CSRF source
-    const wl = await amazonGet("https://www.amazon.com/hz/wishlist/ls");
-    const csrf2 = extractAntiCsrf(wl.text);
-    if (!csrf2) {
+    const wishlist = await amazonGet(`${TRUSTED_AMAZON_ORIGIN}/hz/wishlist/ls`);
+    const fallback = extractAntiCsrf(wishlist.text);
+    if (!fallback) {
       return {
         submitted: false,
         via: "http" as const,
         plan,
         ok: false,
-        error:
-          "could not extract anti-csrftoken-a2z from product or wishlist HTML",
+        error: "could not extract wishlist CSRF token; response bodies omitted",
         productStatus: product.status,
         mutationVerified: false as const,
-        verificationRequired: "capture product HTML fixture or re-auth",
+        verificationRequired:
+          "refresh authentication or update the sanitized parser fixture",
       };
     }
-    return await postAdd(plan, cookie, csrf2, productUrl);
+    return postAdd(plan, cookie, fallback, productUrl);
   }
-  return await postAdd(plan, cookie, csrf, productUrl);
+  return postAdd(plan, cookie, csrf, productUrl);
 }
 
 async function postAdd(
@@ -166,15 +184,16 @@ async function postAdd(
   csrf: string,
   referer: string,
 ) {
-  const body = new URLSearchParams();
-  body.set("asin", plan.asin);
-  body.set("vendorId", "website.wishlist.detail.add");
-  body.set("listType", plan.listType);
-  body.set("isAjax", "1");
+  const body = new URLSearchParams({
+    asin: plan.asin,
+    vendorId: "website.wishlist.detail.add",
+    listType: plan.listType,
+    isAjax: "1",
+  });
   if (plan.listId) body.set("listId", plan.listId);
 
-  const res = await fetch(
-    "https://www.amazon.com/hz/wishlist/additemtolist?ie=UTF8",
+  const response = await fetch(
+    `${TRUSTED_AMAZON_ORIGIN}/hz/wishlist/additemtolist?ie=UTF8`,
     {
       method: "POST",
       headers: {
@@ -187,23 +206,22 @@ async function postAdd(
       signal: AbortSignal.timeout(45_000),
     },
   );
-  const text = await res.text();
+  const text = await readBoundedText(response);
   const parsed = parseAddItemResponse(text);
-  // 200 + huc-atwl / already-in = real success (403 was bad CSRF)
-  const ok = res.ok && parsed.success;
+  const ok = response.ok && parsed.success;
 
   return {
     submitted: ok,
     via: "http" as const,
     plan,
     ok,
-    status: res.status,
-    contentType: res.headers.get("content-type"),
+    status: response.status,
+    contentType: response.headers.get("content-type"),
     alreadyOnList: parsed.alreadyOnList,
     listId: parsed.listId || plan.listId,
     message: parsed.message,
-    bodyPreview: text.slice(0, 400).replace(/\s+/g, " ").trim(),
-    byteLength: text.length,
+    byteLength: Buffer.byteLength(text),
+    responseBodyOmitted: true,
     csrfPresent: true,
     mutationVerified: false as const,
     verificationRequired: `wishlist list -- confirm ASIN ${plan.asin} present`,
