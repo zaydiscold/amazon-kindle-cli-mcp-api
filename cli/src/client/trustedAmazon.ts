@@ -1,8 +1,13 @@
 export const TRUSTED_AMAZON_ORIGIN = "https://www.amazon.com";
 
-function isAmazonUploadHost(hostname: string): boolean {
+function isAmazonS3UploadHost(hostname: string): boolean {
   const host = hostname.toLowerCase();
-  return host === "amazonaws.com" || host.endsWith(".amazonaws.com");
+  return (
+    host === "s3.amazonaws.com" ||
+    /(?:^|\.)s3\.amazonaws\.com$/.test(host) ||
+    /(?:^|\.)s3[.-](?:dualstack[.-])?[a-z0-9-]+\.amazonaws\.com$/.test(host) ||
+    /(?:^|\.)s3-accelerate(?:\.dualstack)?\.amazonaws\.com$/.test(host)
+  );
 }
 
 export function assertTrustedAmazonUrl(
@@ -22,8 +27,9 @@ export function assertTrustedAmazonUrl(
     throw new Error("Amazon requests require HTTPS");
   }
   if (url.origin === TRUSTED_AMAZON_ORIGIN) return url;
-  if (options.allowPresignedUpload && isAmazonUploadHost(url.hostname))
+  if (options.allowPresignedUpload && isAmazonS3UploadHost(url.hostname)) {
     return url;
+  }
   throw new Error(
     `Amazon requests are restricted to ${TRUSTED_AMAZON_ORIGIN}` +
       (options.allowPresignedUpload ? " or an Amazon S3 upload host" : ""),
