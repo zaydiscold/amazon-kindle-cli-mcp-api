@@ -33,6 +33,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit:security
         if: matrix.node-version == 22
+      - run: pnpm secret:scan
+        if: matrix.node-version == 22
       - run: pnpm lint
         if: matrix.node-version == 22
       - run: pnpm format:check
