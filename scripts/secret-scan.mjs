@@ -43,7 +43,8 @@ const RULES = [
   },
   {
     id: "smtp-password-literal",
-    pattern: /SMTP_(?:PASS|PASSWORD)\s*=\s*(["'])([^"'\n]{12,})\1/gi,
+    pattern:
+      /SMTP_(?:PASS|PASSWORD)\s*=\s*(["'])([^"'\n]{12,})\1/gi,
     valueIndex: 2,
   },
   {
@@ -87,6 +88,7 @@ for (const path of trackedFiles()) {
   ) {
     continue;
   }
+
   let info;
   try {
     info = statSync(path);
@@ -94,6 +96,7 @@ for (const path of trackedFiles()) {
     continue;
   }
   if (!info.isFile() || info.size > MAX_FILE_BYTES) continue;
+
   const buffer = readFileSync(path);
   if (buffer.includes(0)) continue;
   const text = buffer.toString("utf8");
@@ -113,9 +116,13 @@ for (const path of trackedFiles()) {
 
 if (findings.length > 0) {
   for (const finding of findings) {
-    console.error(`${finding.path}:${finding.line}: potential secret (${finding.rule}); value omitted`);
+    console.error(
+      `${finding.path}:${finding.line}: potential secret (${finding.rule}); value omitted`,
+    );
   }
   process.exitCode = 1;
 } else {
-  console.log("Secret scan passed. No Amazon session, CSRF, or SMTP credentials detected.");
+  console.log(
+    "Secret scan passed. No Amazon session, CSRF, or SMTP credentials detected.",
+  );
 }
