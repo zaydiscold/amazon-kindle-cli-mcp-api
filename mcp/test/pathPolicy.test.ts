@@ -6,11 +6,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import { resolveMcpFile } from "../src/pathPolicy.js";
 
 const originalRoot = process.env.AMAZON_KINDLE_MCP_FILE_ROOT;
-const originalArbitrary =
-  process.env.AMAZON_KINDLE_MCP_ALLOW_ARBITRARY_FILES;
+const originalArbitrary = process.env.AMAZON_KINDLE_MCP_ALLOW_ARBITRARY_FILES;
 
 afterEach(() => {
-  if (originalRoot === undefined) delete process.env.AMAZON_KINDLE_MCP_FILE_ROOT;
+  if (originalRoot === undefined)
+    delete process.env.AMAZON_KINDLE_MCP_FILE_ROOT;
   else process.env.AMAZON_KINDLE_MCP_FILE_ROOT = originalRoot;
   if (originalArbitrary === undefined) {
     delete process.env.AMAZON_KINDLE_MCP_ALLOW_ARBITRARY_FILES;
