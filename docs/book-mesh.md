@@ -15,7 +15,7 @@ photo / title / EPUB
 | Path | State | Proof |
 |---|---|---|
 | Amazon Wishlist → CLI | live | signed-in cookie + parsed Shopping List |
-| Goodreads to-read → RSS | live | user `179929687`, 100-item RSS page |
+| Goodreads to-read → RSS | live | user `<goodreads-user-id>`, 100-item RSS page |
 | Amazon ⇄ Goodreads parity | live | title/author normalized diff |
 | EPUB → Kindle web upload | live | HTTP init → signed PUT → send-v2, with receipt verification through `kindle recent` |
 | EPUB → Kindle email | ready | needs SMTP config + approved sender |
@@ -26,7 +26,7 @@ photo / title / EPUB
 
 ```bash
 # What differs between Amazon Shopping List and Goodreads Want to Read?
-amazon-kindle-cli parity --user 179929687 --shelf to-read
+amazon-kindle-cli parity --user <goodreads-user-id> --shelf to-read
 
 # Dry-run actions both directions
 amazon-kindle-cli sync goodreads-plan --direction both

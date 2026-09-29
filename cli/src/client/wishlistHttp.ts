@@ -13,7 +13,7 @@ import { amazonNavigateHeaders, amazonXhrHeaders } from "./httpHeaders.js";
 
 export interface WishlistHttpAddOptions {
   asin: string;
-  /** Default Shopping List id when known (e.g. 26C3QAASCFU8S). Optional. */
+  /** Default Shopping List id when known (e.g. from a prior `wishlist list`). Optional. */
   listId?: string;
   listType?: "wishlist" | "idea-list";
   execute?: boolean;

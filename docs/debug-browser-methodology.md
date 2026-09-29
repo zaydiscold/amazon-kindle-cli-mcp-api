@@ -83,7 +83,7 @@ Never call the web executor twice just to "test" it. Test with plans; verify exi
 
 ## Goodreads
 
-- Zayd Goodreads user: `179929687`
+- Goodreads user id is supplied via `--user` or `GOODREADS_USER_ID` (no personal default is baked in).
 - `to-read` RSS is public/readable and returns 100 items/page
 - Goodreads cookie remains separate from Amazon.
 - Match contract: ASIN exact → Goodreads id exact → normalized title + author last name.
