@@ -17,9 +17,12 @@ description: "Use when sending files to Kindle, reconciling Amazon books with Go
 | Add this title to Goodreads / want-to-read | resolve numeric Goodreads ID → `goodreads-cli shelves add --book-id ID --name to-read --execute` |
 | Add this title to my Kindle library, but no legal file exists | Do not fake ownership. Use wishlist/to-read or request explicit purchase approval. |
 
-Use CLI first. Amazon auth auto-loads in a cold shell. Browser/CDP is only for auth recovery or new contract research. HTTP 200 alone is not proof; always verify the resulting receipt/list/shelf state.
+Use CLI first. Amazon auth auto-loads in a cold shell. Browser/CDP is only for auth recovery
+or new contract research. HTTP 200 alone is not proof; always verify the resulting
+receipt/list/shelf state.
 
 ## Trigger phrases
+
 - send this EPUB/PDF to Kindle
 - add this book to Amazon / Goodreads
 - compare my Amazon reading list with Goodreads
@@ -33,25 +36,67 @@ amazon-kindle-cli auth status
 amazon-kindle-cli auth verify
 ```
 
-The CLI auto-loads `~/.amazon/auth.sh` from a cold shell. MCP is optional. Brave CDP is used only to refresh/capture the stored session when verification fails:
+The CLI auto-loads `~/.amazon/auth.sh` from a cold shell. MCP is optional. Brave CDP is used
+only to refresh/capture the stored session when verification fails:
 
 ```text
 CDP: http://127.0.0.1:9333
 profile: %LOCALAPPDATA%\amazon-kindle-debug-profile
 ```
 
-If stale: first harvest the already-authenticated Brave session with `brave_amazon_login.py --cookies-only`; request login/OTP only if the browser is genuinely signed out. Then use `auth verify`: require `readReady=true` for read workflows and `retailWriteReady=true` before wishlist mutations.
+Inspect `readReady`, `retailWriteReady`, and `kindleAuthenticated` **separately**. Require
+`kindleAuthenticated=true` before any Kindle send and `retailWriteReady=true` before any
+wishlist mutation.
+
+## Auth refresh — deterministic SOP (do not waver)
+
+The Amazon session cookie is **long-lived**. Send-to-Kindle and MYCD only enforce a
+*freshness window* (`openid.pape.max_auth_age`, ~3600 s) — a **step-up, not a re-login**.
+Never conclude "auth is broken" from a pre-harvest snapshot.
+
+```bash
+# 1. Prove the current state first.
+amazon-kindle-cli auth verify
+#    kindleAuthenticated=true  ->  done, proceed.
+```
+
+If not:
+
+```bash
+# 2. Re-harvest the existing Brave session BEFORE declaring it dead.
+python "%LOCALAPPDATA%/amazon-kindle-debug-profile/brave_amazon_login.py" --cookies-only
+amazon-kindle-cli auth verify   # re-check
+```
+
+If **still** not authenticated:
+
+```text
+3. Drive Brave to https://www.amazon.com/sendtokindle and click the step-up button
+   (id="s2k-dnd-sign-in-button"). If the retail session is still fresh this completes
+   WITHOUT a password prompt.
+4. If a password field actually appears, supply it through the vault (never inline).
+5. Re-harvest the FULL jar, then re-run auth verify.
+6. Only request an OTP when an OTP field literally appears (enter via
+   browser_vault_enter_code, never by asking for it in chat).
+```
+
+Assisted sign-in via the vault: operator stores the login once (`hermes vault add`), agent
+types the identifier and calls `browser_vault_fill`; the password is resolved server-side and
+never enters the transcript. Full details and the headless force-add path:
+`docs/auth.md`.
 
 ## Reading queue parity
 
-Zayd Goodreads user is `179929687`.
+Goodreads user id comes from `--user` or `GOODREADS_USER_ID` (no personal default is baked
+in).
 
 ```bash
-amazon-kindle-cli parity --user 179929687 --shelf to-read
+amazon-kindle-cli parity --user <goodreads-user-id> --shelf to-read
 amazon-kindle-cli sync goodreads-plan --direction both
 ```
 
-Match order: **ASIN → Goodreads ID → normalized title + author surname**. Never silently mutate a fuzzy match.
+Match order: **ASIN → Goodreads ID → normalized title + author surname**. Never silently
+mutate a fuzzy match.
 
 ## Two Kindle product paths
 
@@ -76,7 +121,12 @@ amazon-kindle-cli kindle books --limit 100
 amazon-kindle-cli kindle pdocs --limit 100
 ```
 
-**Status: experimental / fixture-verified only.** Both commands use the observed MYCD shell-CSRF → `POST /hz/mycd/digital-console/ajax` (`GetContentOwnershipData`, `MYCD_WebService`) contract and have deterministic synthetic-fixture coverage; they have not been independently authenticated-live-verified. Output is metadata only: it never includes cookies, CSRF, download/action URLs, or private document bytes. `--limit` is an intentional bounded view; inspect `truncated` before treating it as complete.
+**Status: experimental / fixture-verified only.** Both commands use the observed MYCD
+shell-CSRF → `POST /hz/mycd/digital-console/ajax` (`GetContentOwnershipData`,
+`MYCD_WebService`) contract and have deterministic synthetic-fixture coverage; they have not
+been independently authenticated-live-verified. Output is metadata only: it never includes
+cookies, CSRF, download/action URLs, or private document bytes. `--limit` is an intentional
+bounded view; inspect `truncated` before treating it as complete.
 
 ## Photo / title intake
 
@@ -100,7 +150,8 @@ amazon-orders-pp-cli auth import --input ~/.amazon/session.portable.json
 amazon-orders-pp-cli doctor
 ```
 
-Use `amazon-orders-pp-cli` for order history/local SQLite analytics; use this CLI for books, Kindle, and Goodreads bridge.
+Use `amazon-orders-pp-cli` for order history/local SQLite analytics; use this CLI for books,
+Kindle, and the Goodreads bridge.
 
 ## Related skills
 
@@ -112,6 +163,7 @@ Use `amazon-orders-pp-cli` for order history/local SQLite analytics; use this CL
 
 ## Reference docs
 
-- `docs/debug-browser-methodology.md` — permanent browser/CDP SOP
-- `docs/book-mesh.md` — current cross-surface topology
+- `docs/auth.md` — canonical auth: surfaces, refresh SOP, step-up, vault (single source)
 - `docs/canonical-procedures.md` — all working command recipes
+- `docs/book-mesh.md` — current cross-surface topology
+- `docs/debug-browser-methodology.md` — permanent browser/CDP SOP

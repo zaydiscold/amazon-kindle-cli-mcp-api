@@ -8,7 +8,7 @@
 |---|---|---|
 | inspect Amazon reading queue | `wishlist list --list-id …` | no (HTTP + slv pagination) |
 | inspect Goodreads to-read | Goodreads CLI / RSS | no |
-| diff queues | `parity --user 179929687` | no |
+| diff queues | `parity --user <goodreads-user-id>` | no |
 | plan both-way reconciliation | `sync goodreads-plan --direction both` | no |
 | photo/title → multi-surface routing | `books resolve` / `add-plan` | no |
 | add resolved book to Amazon list | `wishlist add --asin … --execute` | yes, HTTP |
@@ -47,6 +47,14 @@ Returned metadata excludes CSRF, cookies, presigned/download/action URLs, and pr
 5. `GET /sendtokindle/recent-docs` receipt  
 
 Email path: SMTP → `KINDLE_EMAIL` (independent of buyer cookie).
+
+### Write semantics
+
+- Amazon converts asynchronously: `mutationVerified` stays `false` until the
+  `recent-docs` receipt confirms `IN_LIBRARY`/`COMPLETE`. A successful `send-v2` is not
+  delivery proof.
+- `auth import` is a local-only credential write, never a remote mutation.
+- All writes dry-run by default; `--execute` is the opt-in.
 
 ## Auth
 

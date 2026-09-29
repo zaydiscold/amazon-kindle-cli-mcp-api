@@ -173,7 +173,7 @@ function goodreadsUserId(explicit?: string): string {
   if (process.env.GOODREADS_USER_ID) return process.env.GOODREADS_USER_ID;
   const cfg = loadLocalConfig();
   if (typeof cfg.goodreads_user_id === "string") return cfg.goodreads_user_id;
-  return "179929687";
+  return "";
 }
 
 export async function doctor(): Promise<CommandEnvelope> {
